@@ -1,0 +1,54 @@
+﻿namespace Test
+{
+    public struct UserProxy
+    {
+        private readonly global::Test.User _target;
+
+        public UserProxy(global::Test.User target)
+        {
+            _target = target ?? throw new System.ArgumentNullException(nameof(target));
+        }
+
+        private void ThrowInvalidOperationIfNotInitialized()
+        {
+            if (_target is null)
+            {
+                throw new global::System.InvalidOperationException("Proxy for 'Test.User' is uninitialized");
+            }
+        }
+        
+        public string UserName
+        {
+            get
+            {
+                ThrowInvalidOperationIfNotInitialized();
+                return _target.UserName;
+            }
+            set
+            {
+                ThrowInvalidOperationIfNotInitialized();
+                SetUserName(_target, value);
+
+                [global::System.Runtime.CompilerServices.UnsafeAccessor(global::System.Runtime.CompilerServices.UnsafeAccessorKind.Method, Name = "set_UserName")]
+                extern static void SetUserName(global::Test.User target, string value);
+            }
+        }
+
+        public string Email
+        {
+            get
+            {
+                ThrowInvalidOperationIfNotInitialized();
+                return _target.Email;
+            }
+            set
+            {
+                ThrowInvalidOperationIfNotInitialized();
+                SetEmail(_target, value);
+
+                [global::System.Runtime.CompilerServices.UnsafeAccessor(global::System.Runtime.CompilerServices.UnsafeAccessorKind.Method, Name = "set_Email")]
+                extern static void SetEmail(global::Test.User target, string value);
+            }
+        }
+    }
+}
