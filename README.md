@@ -1,6 +1,6 @@
 # Reflexor
 
-![Reflexor](https://raw.githubusercontent.com/sadicangel/reflexor/refs/heads/main/icon.png)
+[<img src="https://raw.githubusercontent.com/sadicangel/reflexor/refs/heads/main/icon.png" width="256"/>](image.png)
 
 _Reflexor_ is a C# source generator that produces **mutable proxy types** for immutable `record` and `class` types.
 

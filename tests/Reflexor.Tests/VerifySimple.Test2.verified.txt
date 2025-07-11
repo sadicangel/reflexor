@@ -1,14 +1,14 @@
 ﻿namespace Test
 {
-    public struct UserProxy
+    public partial struct UserProxy
     {
         private readonly global::Test.User _target;
-
+        
         public UserProxy(global::Test.User target)
         {
             _target = target ?? throw new System.ArgumentNullException(nameof(target));
         }
-
+        
         private void ThrowInvalidOperationIfNotInitialized()
         {
             if (_target is null)
@@ -17,38 +17,109 @@
             }
         }
         
+        public global::System.Type EqualityContract
+        {
+            get
+            {
+                ThrowInvalidOperationIfNotInitialized();
+                return GetEqualityContract(_target);
+                
+                [global::System.Runtime.CompilerServices.UnsafeAccessor(global::System.Runtime.CompilerServices.UnsafeAccessorKind.Method, Name = "get_EqualityContract")]
+                extern static global::System.Type GetEqualityContract(global::Test.User target);
+            }
+        }
+        
         public string UserName
         {
             get
             {
                 ThrowInvalidOperationIfNotInitialized();
-                return _target.UserName;
+                return GetUserName(_target);
+                
+                [global::System.Runtime.CompilerServices.UnsafeAccessor(global::System.Runtime.CompilerServices.UnsafeAccessorKind.Method, Name = "get_UserName")]
+                extern static string GetUserName(global::Test.User target);
             }
+            
             set
             {
                 ThrowInvalidOperationIfNotInitialized();
                 SetUserName(_target, value);
-
+                
                 [global::System.Runtime.CompilerServices.UnsafeAccessor(global::System.Runtime.CompilerServices.UnsafeAccessorKind.Method, Name = "set_UserName")]
                 extern static void SetUserName(global::Test.User target, string value);
             }
         }
-
+        
         public string Email
         {
             get
             {
                 ThrowInvalidOperationIfNotInitialized();
-                return _target.Email;
+                return GetEmail(_target);
+                
+                [global::System.Runtime.CompilerServices.UnsafeAccessor(global::System.Runtime.CompilerServices.UnsafeAccessorKind.Method, Name = "get_Email")]
+                extern static string GetEmail(global::Test.User target);
             }
+            
             set
             {
                 ThrowInvalidOperationIfNotInitialized();
                 SetEmail(_target, value);
-
+                
                 [global::System.Runtime.CompilerServices.UnsafeAccessor(global::System.Runtime.CompilerServices.UnsafeAccessorKind.Method, Name = "set_Email")]
                 extern static void SetEmail(global::Test.User target, string value);
             }
         }
+        
+        public override string ToString()
+        {
+            return CallToString(_target);
+            
+            [global::System.Runtime.CompilerServices.UnsafeAccessor(global::System.Runtime.CompilerServices.UnsafeAccessorKind.Method, Name = "ToString")]
+            extern static string CallToString(global::Test.User target);
+        }
+        
+        public bool PrintMembers(global::System.Text.StringBuilder builder)
+        {
+            return CallPrintMembers(_target, builder);
+            
+            [global::System.Runtime.CompilerServices.UnsafeAccessor(global::System.Runtime.CompilerServices.UnsafeAccessorKind.Method, Name = "PrintMembers")]
+            extern static bool CallPrintMembers(global::Test.User target, global::System.Text.StringBuilder builder);
+        }
+        
+        public override int GetHashCode()
+        {
+            return CallGetHashCode(_target);
+            
+            [global::System.Runtime.CompilerServices.UnsafeAccessor(global::System.Runtime.CompilerServices.UnsafeAccessorKind.Method, Name = "GetHashCode")]
+            extern static int CallGetHashCode(global::Test.User target);
+        }
+        
+        public override bool Equals(object obj)
+        {
+            return CallEquals(_target, obj);
+            
+            [global::System.Runtime.CompilerServices.UnsafeAccessor(global::System.Runtime.CompilerServices.UnsafeAccessorKind.Method, Name = "Equals")]
+            extern static bool CallEquals(global::Test.User target, object obj);
+        }
+        
+        public bool Equals(global::Test.User other)
+        {
+            return CallEquals(_target, other);
+            
+            [global::System.Runtime.CompilerServices.UnsafeAccessor(global::System.Runtime.CompilerServices.UnsafeAccessorKind.Method, Name = "Equals")]
+            extern static bool CallEquals(global::Test.User target, global::Test.User other);
+        }
+        
+        public void Deconstruct(out string UserName, out string Email)
+        {
+            CallDeconstruct(_target, out UserName, out Email);
+            
+            [global::System.Runtime.CompilerServices.UnsafeAccessor(global::System.Runtime.CompilerServices.UnsafeAccessorKind.Method, Name = "Deconstruct")]
+            extern static void CallDeconstruct(global::Test.User target, out string UserName, out string Email);
+        }
+        
+        public static implicit operator UserProxy(global::Test.User target) => new UserProxy(target);
+        
     }
 }

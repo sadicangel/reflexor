@@ -28,7 +28,7 @@ internal static class TestHelper
                 diagnostics.Select(d => $"{d.Id}: {d.GetMessage(CultureInfo.InvariantCulture)}")));
         }
 
-        return Verify(documents.Skip(1).Select(document => new Target("txt", document.Content)));
+        return Verify(documents.Select(document => new Target("txt", document.Content)));
     }
 
     public static SettingsTask VerifyDiagnostic(string source, ProjectConfig? config = null)
