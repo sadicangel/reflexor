@@ -1,14 +1,14 @@
 ﻿namespace Test
 {
-    public struct UserProxy
+    public partial struct UserProxy
     {
         private readonly global::Test.User _target;
-
+        
         public UserProxy(global::Test.User target)
         {
             _target = target ?? throw new System.ArgumentNullException(nameof(target));
         }
-
+        
         private void ThrowInvalidOperationIfNotInitialized()
         {
             if (_target is null)
@@ -22,33 +22,44 @@
             get
             {
                 ThrowInvalidOperationIfNotInitialized();
-                return _target.UserName;
+                return GetUserName(_target);
+                
+                [global::System.Runtime.CompilerServices.UnsafeAccessor(global::System.Runtime.CompilerServices.UnsafeAccessorKind.Method, Name = "get_UserName")]
+                extern static string GetUserName(global::Test.User target);
             }
+            
             set
             {
                 ThrowInvalidOperationIfNotInitialized();
                 SetUserName(_target, value);
-
+                
                 [global::System.Runtime.CompilerServices.UnsafeAccessor(global::System.Runtime.CompilerServices.UnsafeAccessorKind.Method, Name = "set_UserName")]
                 extern static void SetUserName(global::Test.User target, string value);
             }
         }
-
+        
         public string Email
         {
             get
             {
                 ThrowInvalidOperationIfNotInitialized();
-                return _target.Email;
+                return GetEmail(_target);
+                
+                [global::System.Runtime.CompilerServices.UnsafeAccessor(global::System.Runtime.CompilerServices.UnsafeAccessorKind.Method, Name = "get_Email")]
+                extern static string GetEmail(global::Test.User target);
             }
+            
             set
             {
                 ThrowInvalidOperationIfNotInitialized();
                 SetEmail(_target, value);
-
+                
                 [global::System.Runtime.CompilerServices.UnsafeAccessor(global::System.Runtime.CompilerServices.UnsafeAccessorKind.Method, Name = "set_Email")]
                 extern static void SetEmail(global::Test.User target, string value);
             }
         }
+        
+        public static implicit operator UserProxy(global::Test.User target) => new UserProxy(target);
+        
     }
 }
