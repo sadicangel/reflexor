@@ -1,0 +1,65 @@
+﻿namespace Test
+{
+    public partial struct PartialClassProxy
+    {
+        private readonly global::Test.PartialClass _target;
+        
+        public PartialClassProxy(global::Test.PartialClass target)
+        {
+            _target = target ?? throw new System.ArgumentNullException(nameof(target));
+        }
+        
+        private void ThrowInvalidOperationIfNotInitialized()
+        {
+            if (_target is null)
+            {
+                throw new global::System.InvalidOperationException("Proxy for 'Test.PartialClass' is uninitialized");
+            }
+        }
+        
+        public int Part1
+        {
+            get
+            {
+                ThrowInvalidOperationIfNotInitialized();
+                return GetPart1(_target);
+                
+                [global::System.Runtime.CompilerServices.UnsafeAccessor(global::System.Runtime.CompilerServices.UnsafeAccessorKind.Method, Name = "get_Part1")]
+                extern static int GetPart1(global::Test.PartialClass target);
+            }
+            
+            set
+            {
+                ThrowInvalidOperationIfNotInitialized();
+                SetPart1(_target, value);
+                
+                [global::System.Runtime.CompilerServices.UnsafeAccessor(global::System.Runtime.CompilerServices.UnsafeAccessorKind.Method, Name = "set_Part1")]
+                extern static void SetPart1(global::Test.PartialClass target, int value);
+            }
+        }
+        
+        public string Part2
+        {
+            get
+            {
+                ThrowInvalidOperationIfNotInitialized();
+                return GetPart2(_target);
+                
+                [global::System.Runtime.CompilerServices.UnsafeAccessor(global::System.Runtime.CompilerServices.UnsafeAccessorKind.Method, Name = "get_Part2")]
+                extern static string GetPart2(global::Test.PartialClass target);
+            }
+            
+            set
+            {
+                ThrowInvalidOperationIfNotInitialized();
+                SetPart2(_target, value);
+                
+                [global::System.Runtime.CompilerServices.UnsafeAccessor(global::System.Runtime.CompilerServices.UnsafeAccessorKind.Method, Name = "set_Part2")]
+                extern static void SetPart2(global::Test.PartialClass target, string value);
+            }
+        }
+        
+        public static implicit operator PartialClassProxy(global::Test.PartialClass target) => new PartialClassProxy(target);
+        
+    }
+}
