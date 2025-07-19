@@ -14,7 +14,9 @@ public static class IndentedTextWriterExtensions
             writer.Indent++;
         }
 
-        writer.WriteLine($"public partial struct {proxy.Name}");
+        var modifiers = proxy.Modifiers.ToModifierString();
+
+        writer.WriteLine($"public {modifiers}struct {proxy.Name}");
         writer.WriteLine("{");
         writer.Indent++;
 
@@ -62,7 +64,7 @@ public static class IndentedTextWriterExtensions
             writer.WriteLine("}");
             writer.WriteLine();
 
-            writer.WriteLine("private void ThrowInvalidOperationIfNotInitialized()");
+            writer.WriteLine("private readonly void ThrowInvalidOperationIfNotInitialized()");
             writer.WriteLine("{");
             writer.Indent++;
             writer.WriteLine("if (_target is null)");
@@ -85,7 +87,7 @@ public static class IndentedTextWriterExtensions
             ? "global::System.Runtime.CompilerServices.UnsafeAccessorKind.StaticMethod"
             : "global::System.Runtime.CompilerServices.UnsafeAccessorKind.Method";
 
-        var modifiers = property.IsStatic ? "static " : string.Empty;
+        var modifiers = property.Modifiers.ToModifierString();
 
         writer.WriteLine($"public {modifiers}{property.Type} {property.Name}");
         writer.WriteLine("{");

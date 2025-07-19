@@ -1,0 +1,42 @@
+﻿namespace Test
+{
+    public partial struct UnsafeClassProxy
+    {
+        private readonly global::Test.UnsafeClass _target;
+        
+        public UnsafeClassProxy(global::Test.UnsafeClass target)
+        {
+            _target = target ?? throw new System.ArgumentNullException(nameof(target));
+        }
+        
+        private readonly void ThrowInvalidOperationIfNotInitialized()
+        {
+            if (_target is null)
+            {
+                throw new global::System.InvalidOperationException("Proxy for 'Test.UnsafeClass' is uninitialized");
+            }
+        }
+        
+        public unsafe int* Pointer
+        {
+            get
+            {
+                ThrowInvalidOperationIfNotInitialized();
+                return GetPointer(_target);
+                
+                [global::System.Runtime.CompilerServices.UnsafeAccessor(global::System.Runtime.CompilerServices.UnsafeAccessorKind.Method, Name = "get_Pointer")]
+                extern static int* GetPointer(global::Test.UnsafeClass target);
+            }
+            
+            set
+            {
+                ThrowInvalidOperationIfNotInitialized();
+                SetPointer(_target, value);
+                
+                [global::System.Runtime.CompilerServices.UnsafeAccessor(global::System.Runtime.CompilerServices.UnsafeAccessorKind.Method, Name = "set_Pointer")]
+                extern static void SetPointer(global::Test.UnsafeClass target, int* value);
+            }
+        }
+        
+    }
+}

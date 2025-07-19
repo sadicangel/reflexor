@@ -50,7 +50,8 @@ internal readonly record struct GeneratorSetup(CSharpParseOptions ParseOptions, 
             references,
             new CSharpCompilationOptions(
                 outputKind: OutputKind.DynamicallyLinkedLibrary,
-                warningLevel: int.MaxValue));
+                warningLevel: int.MaxValue,
+                allowUnsafe: true));
 
         return compilation;
     }

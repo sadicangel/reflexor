@@ -14,11 +14,50 @@ public readonly record struct Proxy(
     string? Namespace,
     string TargetType,
     Location TargetLocation,
-    bool IsStatic,
+    Modifiers Modifiers,
     ImmutableArray<Property> Properties,
-    ImmutableArray<Method> Methods);
+    ImmutableArray<Method> Methods)
+{
+    public bool IsStatic => Modifiers.HasFlag(Modifiers.Static);
+}
 
-public readonly record struct Property(string Name, string Type, bool IsStatic, bool IsReadOnly);
+[Flags]
+public enum Modifiers
+{
+    None = 0,
+    Static = 1 << 0,
+    ReadOnly = 1 << 1,
+    Unsafe = 1 << 2,
+    Ref = 1 << 3,
+    Partial = 1 << 4,
+}
+
+public static class ModifiersExtensions
+{
+    public static string ToModifierString(this Modifiers modifiers)
+    {
+        var sb = new StringBuilder();
+        if (modifiers.HasFlag(Modifiers.Static))
+            sb.Append("static ");
+        if (modifiers.HasFlag(Modifiers.ReadOnly))
+            sb.Append("readonly ");
+        if (modifiers.HasFlag(Modifiers.Unsafe))
+            sb.Append("unsafe ");
+        if (modifiers.HasFlag(Modifiers.Ref))
+            sb.Append("ref ");
+        if (modifiers.HasFlag(Modifiers.Partial))
+            sb.Append("partial ");
+        return sb.ToString();
+    }
+}
+
+public readonly record struct Property(string Name, string Type, Modifiers Modifiers)
+{
+    public bool IsStatic => Modifiers.HasFlag(Modifiers.Static);
+    public bool IsReadOnly => Modifiers.HasFlag(Modifiers.ReadOnly);
+    public bool IsUnsafe => Modifiers.HasFlag(Modifiers.Static);
+}
+
 public readonly record struct Parameter(string Name, string Type, string Ref);
 public readonly record struct Method(string Name, string ReturnType, bool IsStatic, ImmutableArray<Parameter> Parameters);
 
@@ -41,11 +80,9 @@ public sealed class ProxyGenerator : IIncrementalGenerator
                         {
                             case IPropertySymbol propertySymbol when CanBeProxied(propertySymbol):
                                 properties[propertySymbol.Name] = new Property(
-                                    propertySymbol.Name,
-                                    propertySymbol.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat),
-                                    propertySymbol.IsStatic,
-                                    propertySymbol.IsReadOnly
-                                        || (properties.TryGetValue(propertySymbol.Name, out var existing) && existing.IsReadOnly));
+                                    Name: propertySymbol.Name,
+                                    Type: propertySymbol.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat),
+                                    Modifiers: GetModifiers(propertySymbol));
                                 break;
 
                             case IMethodSymbol methodSymbol when CanBeProxied(methodSymbol):
@@ -72,7 +109,7 @@ public sealed class ProxyGenerator : IIncrementalGenerator
                         Namespace: targetType.ContainingNamespace.IsGlobalNamespace ? null : targetType.ContainingNamespace.ToDisplayString(SymbolDisplayFormat.CSharpErrorMessageFormat),
                         TargetType: targetType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat),
                         TargetLocation: targetType.Locations.First(), // TODO: Use all locations here
-                        IsStatic: targetType.IsStatic,
+                        Modifiers: GetModifiers(targetType),
                         Properties: [.. properties.Values],
                         Methods: [.. methods]);
 
@@ -96,8 +133,51 @@ public sealed class ProxyGenerator : IIncrementalGenerator
         });
     }
 
-    private static bool CanBeProxied(IPropertySymbol property) =>
-        property.Type.DeclaredAccessibility is Accessibility.Public;
+    private static bool CanBeProxied(IPropertySymbol property)
+    {
+        return property.Type switch
+        {
+            IPointerTypeSymbol { PointedAtType: var pointedAtType } => TypeCanBeProxied(pointedAtType),
+            _ => TypeCanBeProxied(property.Type)
+        };
+
+        static bool TypeCanBeProxied(ITypeSymbol type) =>
+            type.DeclaredAccessibility is Accessibility.Public;
+    }
+
+    private static Modifiers GetModifiers(INamedTypeSymbol type)
+    {
+        var modifiers = Modifiers.Partial;
+
+        if (type.IsStatic)
+        {
+            modifiers |= Modifiers.Static;
+        }
+
+        return modifiers;
+    }
+
+    private static Modifiers GetModifiers(IPropertySymbol property)
+    {
+        var modifiers = Modifiers.None;
+
+        if (property.IsStatic)
+        {
+            modifiers |= Modifiers.Static;
+        }
+
+        if (property.IsReadOnly)
+        {
+            modifiers |= Modifiers.ReadOnly;
+        }
+
+        if (property.Type is IPointerTypeSymbol)
+        {
+            modifiers |= Modifiers.Unsafe;
+        }
+
+        return modifiers;
+    }
 
     private static bool CanBeProxied(IMethodSymbol method)
     {

@@ -1,5 +1,4 @@
 ﻿using System.Collections.Immutable;
-using System.Globalization;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Diagnostics;
 
@@ -30,9 +29,7 @@ internal static class TestHelper
 
         static SettingsTask Fail(ImmutableArray<Diagnostic> diagnostics)
         {
-            Assert.Fail(string.Join(
-                Environment.NewLine,
-                diagnostics.Select(d => $"{d.Id}: {d.GetMessage(CultureInfo.InvariantCulture)}")));
+            Assert.Fail(string.Join(Environment.NewLine, diagnostics));
 
             return null!; // This line is unreachable but required for compilation.
         }
