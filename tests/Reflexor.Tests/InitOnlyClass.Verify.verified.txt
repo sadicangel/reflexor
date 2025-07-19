@@ -1,0 +1,65 @@
+﻿namespace Test
+{
+    public partial struct InitOnlyClassProxy
+    {
+        private readonly global::Test.InitOnlyClass _target;
+        
+        public InitOnlyClassProxy(global::Test.InitOnlyClass target)
+        {
+            _target = target ?? throw new System.ArgumentNullException(nameof(target));
+        }
+        
+        private void ThrowInvalidOperationIfNotInitialized()
+        {
+            if (_target is null)
+            {
+                throw new global::System.InvalidOperationException("Proxy for 'Test.InitOnlyClass' is uninitialized");
+            }
+        }
+        
+        public string Name
+        {
+            get
+            {
+                ThrowInvalidOperationIfNotInitialized();
+                return GetName(_target);
+                
+                [global::System.Runtime.CompilerServices.UnsafeAccessor(global::System.Runtime.CompilerServices.UnsafeAccessorKind.Method, Name = "get_Name")]
+                extern static string GetName(global::Test.InitOnlyClass target);
+            }
+            
+            set
+            {
+                ThrowInvalidOperationIfNotInitialized();
+                SetName(_target, value);
+                
+                [global::System.Runtime.CompilerServices.UnsafeAccessor(global::System.Runtime.CompilerServices.UnsafeAccessorKind.Method, Name = "set_Name")]
+                extern static void SetName(global::Test.InitOnlyClass target, string value);
+            }
+        }
+        
+        public int Age
+        {
+            get
+            {
+                ThrowInvalidOperationIfNotInitialized();
+                return GetAge(_target);
+                
+                [global::System.Runtime.CompilerServices.UnsafeAccessor(global::System.Runtime.CompilerServices.UnsafeAccessorKind.Method, Name = "get_Age")]
+                extern static int GetAge(global::Test.InitOnlyClass target);
+            }
+            
+            set
+            {
+                ThrowInvalidOperationIfNotInitialized();
+                SetAge(_target, value);
+                
+                [global::System.Runtime.CompilerServices.UnsafeAccessor(global::System.Runtime.CompilerServices.UnsafeAccessorKind.Method, Name = "set_Age")]
+                extern static void SetAge(global::Test.InitOnlyClass target, int value);
+            }
+        }
+        
+        public static implicit operator InitOnlyClassProxy(global::Test.InitOnlyClass target) => new InitOnlyClassProxy(target);
+        
+    }
+}
