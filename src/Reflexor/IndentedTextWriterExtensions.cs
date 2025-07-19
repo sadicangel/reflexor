@@ -14,9 +14,8 @@ public static class IndentedTextWriterExtensions
             writer.Indent++;
         }
 
-        var modifiers = proxy.Modifiers.ToModifierString();
-
-        writer.WriteLine($"public {modifiers}struct {proxy.Name}");
+        writer.WriteDeclaration(proxy.Name, "struct", proxy.Modifiers);
+        writer.WriteLine();
         writer.WriteLine("{");
         writer.Indent++;
 
@@ -51,7 +50,7 @@ public static class IndentedTextWriterExtensions
 
     public static void WriteInstanceMembers(this IndentedTextWriter writer, Proxy proxy)
     {
-        if (!proxy.IsStatic)
+        if (!proxy.Modifiers.HasFlag(Modifiers.Static))
         {
             writer.WriteLine($"private readonly {proxy.TargetType} _target;");
             writer.WriteLine();
@@ -79,24 +78,48 @@ public static class IndentedTextWriterExtensions
         }
     }
 
+    private static void WriteDeclaration(this IndentedTextWriter writer, string name, string type, Modifiers modifiers)
+    {
+        writer.Write("public ");
+        if (modifiers.HasFlag(Modifiers.Static))
+            writer.Write("static ");
+        if (modifiers.HasFlag(Modifiers.Override))
+            writer.Write("override ");
+        if (modifiers.HasFlag(Modifiers.ReadOnly))
+            writer.Write("readonly ");
+        if (modifiers.HasFlag(Modifiers.Unsafe))
+            writer.Write("unsafe ");
+        if (modifiers.HasFlag(Modifiers.RefStruct))
+            writer.Write("ref ");
+        if (modifiers.HasFlag(Modifiers.Partial))
+            writer.Write("partial ");
+        if (modifiers.HasFlag(Modifiers.Ref))
+            writer.Write("ref ");
+        if (modifiers.HasFlag(Modifiers.RefReadOnly))
+            writer.Write("ref readonly ");
+        writer.Write(type);
+        writer.Write(" ");
+        writer.Write(name);
+    }
+
     public static void WriteProperty(this IndentedTextWriter writer, string targetType, Property property)
     {
-        var target = property.IsStatic ? "null!" : "_target";
+        var target = property.Modifiers.HasFlag(Modifiers.Static) ? "null!" : "_target";
 
-        var accessorKind = property.IsStatic
+        var accessorKind = property.Modifiers.HasFlag(Modifiers.Static)
             ? "global::System.Runtime.CompilerServices.UnsafeAccessorKind.StaticMethod"
             : "global::System.Runtime.CompilerServices.UnsafeAccessorKind.Method";
 
-        var modifiers = property.Modifiers.ToModifierString();
+        writer.WriteDeclaration(property.Name, property.Type, property.Modifiers | (!property.Modifiers.HasFlag(Modifiers.Static) ? Modifiers.ReadOnly : Modifiers.None));
+        writer.WriteLine();
 
-        writer.WriteLine($"public {modifiers}{property.Type} {property.Name}");
         writer.WriteLine("{");
         writer.Indent++;
 
         writer.WriteLine("get");
         writer.WriteLine("{");
         writer.Indent++;
-        if (!property.IsStatic)
+        if (!property.Modifiers.HasFlag(Modifiers.Static))
         {
             writer.WriteLine("ThrowInvalidOperationIfNotInitialized();");
         }
@@ -107,13 +130,13 @@ public static class IndentedTextWriterExtensions
         writer.Indent--;
         writer.WriteLine("}");
 
-        if (!property.IsReadOnly)
+        if (!property.Modifiers.HasFlag(Modifiers.ReadOnly))
         {
             writer.WriteLine();
             writer.WriteLine("set");
             writer.WriteLine("{");
             writer.Indent++;
-            if (!property.IsStatic)
+            if (!property.Modifiers.HasFlag(Modifiers.Static))
             {
                 writer.WriteLine("ThrowInvalidOperationIfNotInitialized();");
             }
@@ -131,12 +154,7 @@ public static class IndentedTextWriterExtensions
 
     public static void WriteMethod(this IndentedTextWriter writer, string targetType, Method method)
     {
-        writer.Write("public ");
-        if (IsOverride(method))
-            writer.Write("override ");
-        writer.Write(method.ReturnType);
-        writer.Write(" ");
-        writer.Write(method.Name);
+        writer.WriteDeclaration(method.Name, method.ReturnType, method.Modifiers | (IsOverride(method) ? Modifiers.Override : Modifiers.None));
         writer.Write("(");
         writer.WriteParameters(method.Parameters, prependComma: false);
         writer.WriteLine(")");

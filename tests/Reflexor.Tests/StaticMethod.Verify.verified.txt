@@ -9,7 +9,7 @@
             _target = target ?? throw new System.ArgumentNullException(nameof(target));
         }
         
-        private void ThrowInvalidOperationIfNotInitialized()
+        private readonly void ThrowInvalidOperationIfNotInitialized()
         {
             if (_target is null)
             {

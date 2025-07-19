@@ -9,7 +9,7 @@
             _target = target ?? throw new System.ArgumentNullException(nameof(target));
         }
         
-        private void ThrowInvalidOperationIfNotInitialized()
+        private readonly void ThrowInvalidOperationIfNotInitialized()
         {
             if (_target is null)
             {
@@ -17,7 +17,7 @@
             }
         }
         
-        public void DoWork(ref int x, in int y, out int z)
+        public readonly void DoWork(ref int x, in int y, out int z)
         {
             CallDoWork(_target, ref x, in y, out z);
             

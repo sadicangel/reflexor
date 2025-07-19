@@ -9,7 +9,7 @@
             _target = target ?? throw new System.ArgumentNullException(nameof(target));
         }
         
-        private void ThrowInvalidOperationIfNotInitialized()
+        private readonly void ThrowInvalidOperationIfNotInitialized()
         {
             if (_target is null)
             {
@@ -17,7 +17,7 @@
             }
         }
         
-        public global::System.Type EqualityContract
+        public readonly global::System.Type EqualityContract
         {
             get
             {
@@ -29,7 +29,7 @@
             }
         }
         
-        public string Name
+        public readonly string Name
         {
             get
             {
@@ -50,7 +50,7 @@
             }
         }
         
-        public int Age
+        public readonly int Age
         {
             get
             {
@@ -71,7 +71,7 @@
             }
         }
         
-        public override string ToString()
+        public override readonly string ToString()
         {
             return CallToString(_target);
             
@@ -79,7 +79,7 @@
             extern static string CallToString(global::Test.SimpleRecord target);
         }
         
-        public bool PrintMembers(global::System.Text.StringBuilder builder)
+        public readonly bool PrintMembers(global::System.Text.StringBuilder builder)
         {
             return CallPrintMembers(_target, builder);
             
@@ -87,7 +87,7 @@
             extern static bool CallPrintMembers(global::Test.SimpleRecord target, global::System.Text.StringBuilder builder);
         }
         
-        public override int GetHashCode()
+        public override readonly int GetHashCode()
         {
             return CallGetHashCode(_target);
             
@@ -95,7 +95,7 @@
             extern static int CallGetHashCode(global::Test.SimpleRecord target);
         }
         
-        public override bool Equals(object obj)
+        public override readonly bool Equals(object obj)
         {
             return CallEquals(_target, obj);
             
@@ -103,7 +103,7 @@
             extern static bool CallEquals(global::Test.SimpleRecord target, object obj);
         }
         
-        public bool Equals(global::Test.SimpleRecord other)
+        public readonly bool Equals(global::Test.SimpleRecord other)
         {
             return CallEquals(_target, other);
             
@@ -111,7 +111,7 @@
             extern static bool CallEquals(global::Test.SimpleRecord target, global::Test.SimpleRecord other);
         }
         
-        public void Deconstruct(out string Name, out int Age)
+        public readonly void Deconstruct(out string Name, out int Age)
         {
             CallDeconstruct(_target, out Name, out Age);
             

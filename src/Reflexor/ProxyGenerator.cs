@@ -16,50 +16,26 @@ public readonly record struct Proxy(
     Location TargetLocation,
     Modifiers Modifiers,
     ImmutableArray<Property> Properties,
-    ImmutableArray<Method> Methods)
-{
-    public bool IsStatic => Modifiers.HasFlag(Modifiers.Static);
-}
+    ImmutableArray<Method> Methods);
 
 [Flags]
 public enum Modifiers
 {
     None = 0,
     Static = 1 << 0,
-    ReadOnly = 1 << 1,
-    Unsafe = 1 << 2,
-    Ref = 1 << 3,
-    Partial = 1 << 4,
+    Override = 1 << 1,
+    ReadOnly = 1 << 2,
+    Unsafe = 1 << 3,
+    RefStruct = 1 << 4,
+    Partial = 1 << 5,
+    Ref = 1 << 6,
+    RefReadOnly = 1 << 7,
 }
 
-public static class ModifiersExtensions
-{
-    public static string ToModifierString(this Modifiers modifiers)
-    {
-        var sb = new StringBuilder();
-        if (modifiers.HasFlag(Modifiers.Static))
-            sb.Append("static ");
-        if (modifiers.HasFlag(Modifiers.ReadOnly))
-            sb.Append("readonly ");
-        if (modifiers.HasFlag(Modifiers.Unsafe))
-            sb.Append("unsafe ");
-        if (modifiers.HasFlag(Modifiers.Ref))
-            sb.Append("ref ");
-        if (modifiers.HasFlag(Modifiers.Partial))
-            sb.Append("partial ");
-        return sb.ToString();
-    }
-}
-
-public readonly record struct Property(string Name, string Type, Modifiers Modifiers)
-{
-    public bool IsStatic => Modifiers.HasFlag(Modifiers.Static);
-    public bool IsReadOnly => Modifiers.HasFlag(Modifiers.ReadOnly);
-    public bool IsUnsafe => Modifiers.HasFlag(Modifiers.Static);
-}
+public readonly record struct Property(string Name, string Type, Modifiers Modifiers);
 
 public readonly record struct Parameter(string Name, string Type, string Ref);
-public readonly record struct Method(string Name, string ReturnType, bool IsStatic, ImmutableArray<Parameter> Parameters);
+public readonly record struct Method(string Name, string ReturnType, Modifiers Modifiers, ImmutableArray<Parameter> Parameters);
 
 [Generator]
 public sealed class ProxyGenerator : IIncrementalGenerator
@@ -87,10 +63,10 @@ public sealed class ProxyGenerator : IIncrementalGenerator
 
                             case IMethodSymbol methodSymbol when CanBeProxied(methodSymbol):
                                 methods.Add(new Method(
-                                    methodSymbol.Name,
-                                    methodSymbol.ReturnType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat),
-                                    methodSymbol.IsStatic,
-                                    [.. methodSymbol.Parameters.Select(x => new Parameter(
+                                    Name: methodSymbol.Name,
+                                    ReturnType: methodSymbol.ReturnType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat),
+                                    Modifiers: GetModifiers(methodSymbol),
+                                    Parameters: [.. methodSymbol.Parameters.Select(x => new Parameter(
                                         x.Name,
                                         x.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat),
                                         x.RefKind switch {
@@ -119,7 +95,7 @@ public sealed class ProxyGenerator : IIncrementalGenerator
 
         context.RegisterImplementationSourceOutput(proxyProvider, (context, proxy) =>
         {
-            if (proxy.IsStatic)
+            if (proxy.Modifiers.HasFlag(Modifiers.Static))
             {
                 context.ReportDiagnostic(UnsupportedStaticTypeDiagnostic.Create(proxy.TargetLocation, proxy.TargetType[8..]));
                 return;
@@ -152,6 +128,11 @@ public sealed class ProxyGenerator : IIncrementalGenerator
         if (type.IsStatic)
         {
             modifiers |= Modifiers.Static;
+        }
+
+        if (type.IsRefLikeType)
+        {
+            modifiers |= Modifiers.RefStruct;
         }
 
         return modifiers;
@@ -194,5 +175,32 @@ public sealed class ProxyGenerator : IIncrementalGenerator
             return false;
 
         return true;
+    }
+
+    private static Modifiers GetModifiers(IMethodSymbol method)
+    {
+        var modifiers = Modifiers.ReadOnly;
+
+        if (method.IsStatic)
+        {
+            modifiers |= Modifiers.Static;
+        }
+
+        if (method.ReturnType is IPointerTypeSymbol)
+        {
+            modifiers |= Modifiers.Unsafe;
+        }
+
+        if (method.RefKind is RefKind.Ref)
+        {
+            modifiers |= Modifiers.Ref;
+        }
+
+        if (method.RefKind is RefKind.RefReadOnly)
+        {
+            modifiers |= Modifiers.RefReadOnly;
+        }
+
+        return modifiers;
     }
 }

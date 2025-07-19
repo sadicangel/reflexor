@@ -17,7 +17,7 @@
             }
         }
         
-        public unsafe int* Pointer
+        public readonly unsafe int* Pointer
         {
             get
             {

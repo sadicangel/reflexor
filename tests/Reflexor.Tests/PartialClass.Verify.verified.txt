@@ -9,7 +9,7 @@
             _target = target ?? throw new System.ArgumentNullException(nameof(target));
         }
         
-        private void ThrowInvalidOperationIfNotInitialized()
+        private readonly void ThrowInvalidOperationIfNotInitialized()
         {
             if (_target is null)
             {
@@ -17,7 +17,7 @@
             }
         }
         
-        public int Part1
+        public readonly int Part1
         {
             get
             {
@@ -38,7 +38,7 @@
             }
         }
         
-        public string Part2
+        public readonly string Part2
         {
             get
             {

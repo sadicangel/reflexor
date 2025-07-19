@@ -9,7 +9,7 @@
             _target = target ?? throw new System.ArgumentNullException(nameof(target));
         }
         
-        private void ThrowInvalidOperationIfNotInitialized()
+        private readonly void ThrowInvalidOperationIfNotInitialized()
         {
             if (_target is null)
             {
@@ -17,7 +17,7 @@
             }
         }
         
-        public int PublicProp
+        public readonly int PublicProp
         {
             get
             {
@@ -38,7 +38,7 @@
             }
         }
         
-        public int ProtectedProp
+        public readonly int ProtectedProp
         {
             get
             {
@@ -59,7 +59,7 @@
             }
         }
         
-        public int InternalProp
+        public readonly int InternalProp
         {
             get
             {
@@ -80,7 +80,7 @@
             }
         }
         
-        public int PrivateProp
+        public readonly int PrivateProp
         {
             get
             {
