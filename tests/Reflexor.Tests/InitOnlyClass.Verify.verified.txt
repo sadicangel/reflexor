@@ -59,7 +59,5 @@
             }
         }
         
-        public static implicit operator InitOnlyClassProxy(global::Test.InitOnlyClass target) => new InitOnlyClassProxy(target);
-        
     }
 }

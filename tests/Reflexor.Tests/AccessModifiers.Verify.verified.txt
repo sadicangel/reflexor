@@ -101,7 +101,5 @@
             }
         }
         
-        public static implicit operator AccessModifiersProxy(global::Test.AccessModifiers target) => new AccessModifiersProxy(target);
-        
     }
 }

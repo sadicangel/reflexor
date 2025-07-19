@@ -59,7 +59,5 @@
             }
         }
         
-        public static implicit operator PartialClassProxy(global::Test.PartialClass target) => new PartialClassProxy(target);
-        
     }
 }

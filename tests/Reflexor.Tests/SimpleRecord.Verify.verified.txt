@@ -119,7 +119,5 @@
             extern static void CallDeconstruct(global::Test.SimpleRecord target, out string Name, out int Age);
         }
         
-        public static implicit operator SimpleRecordProxy(global::Test.SimpleRecord target) => new SimpleRecordProxy(target);
-        
     }
 }

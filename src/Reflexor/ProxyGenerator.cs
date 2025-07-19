@@ -154,8 +154,10 @@ public static class IndentedTextWriterExtensions
             writer.WriteLine();
         }
 
+#if DECLARE_IMPLICIT_CONVERSION // Replace with csproj property
         writer.WriteLine($"public static implicit operator {proxy.Name}({proxy.TargetType} target) => new {proxy.Name}(target);");
         writer.WriteLine();
+#endif
 
         writer.Indent--;
         writer.WriteLine("}");

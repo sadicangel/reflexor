@@ -1,1 +1,29 @@
-﻿
+﻿namespace Test
+{
+    public partial struct ExternMethodProxy
+    {
+        private readonly global::Test.ExternMethod _target;
+        
+        public ExternMethodProxy(global::Test.ExternMethod target)
+        {
+            _target = target ?? throw new System.ArgumentNullException(nameof(target));
+        }
+        
+        private void ThrowInvalidOperationIfNotInitialized()
+        {
+            if (_target is null)
+            {
+                throw new global::System.InvalidOperationException("Proxy for 'Test.ExternMethod' is uninitialized");
+            }
+        }
+        
+        public void NativeCall()
+        {
+            CallNativeCall(_target);
+            
+            [global::System.Runtime.CompilerServices.UnsafeAccessor(global::System.Runtime.CompilerServices.UnsafeAccessorKind.Method, Name = "NativeCall")]
+            extern static void CallNativeCall(global::Test.ExternMethod target);
+        }
+        
+    }
+}
