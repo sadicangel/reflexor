@@ -1,10 +1,10 @@
 ﻿namespace Test
 {
-    public partial struct UserProxy
+    public partial struct SimpleRecordProxy
     {
-        private readonly global::Test.User _target;
+        private readonly global::Test.SimpleRecord _target;
         
-        public UserProxy(global::Test.User target)
+        public SimpleRecordProxy(global::Test.SimpleRecord target)
         {
             _target = target ?? throw new System.ArgumentNullException(nameof(target));
         }
@@ -13,7 +13,7 @@
         {
             if (_target is null)
             {
-                throw new global::System.InvalidOperationException("Proxy for 'Test.User' is uninitialized");
+                throw new global::System.InvalidOperationException("Proxy for 'Test.SimpleRecord' is uninitialized");
             }
         }
         
@@ -25,49 +25,49 @@
                 return GetEqualityContract(_target);
                 
                 [global::System.Runtime.CompilerServices.UnsafeAccessor(global::System.Runtime.CompilerServices.UnsafeAccessorKind.Method, Name = "get_EqualityContract")]
-                extern static global::System.Type GetEqualityContract(global::Test.User target);
+                extern static global::System.Type GetEqualityContract(global::Test.SimpleRecord target);
             }
         }
         
-        public string UserName
+        public string Name
         {
             get
             {
                 ThrowInvalidOperationIfNotInitialized();
-                return GetUserName(_target);
+                return GetName(_target);
                 
-                [global::System.Runtime.CompilerServices.UnsafeAccessor(global::System.Runtime.CompilerServices.UnsafeAccessorKind.Method, Name = "get_UserName")]
-                extern static string GetUserName(global::Test.User target);
+                [global::System.Runtime.CompilerServices.UnsafeAccessor(global::System.Runtime.CompilerServices.UnsafeAccessorKind.Method, Name = "get_Name")]
+                extern static string GetName(global::Test.SimpleRecord target);
             }
             
             set
             {
                 ThrowInvalidOperationIfNotInitialized();
-                SetUserName(_target, value);
+                SetName(_target, value);
                 
-                [global::System.Runtime.CompilerServices.UnsafeAccessor(global::System.Runtime.CompilerServices.UnsafeAccessorKind.Method, Name = "set_UserName")]
-                extern static void SetUserName(global::Test.User target, string value);
+                [global::System.Runtime.CompilerServices.UnsafeAccessor(global::System.Runtime.CompilerServices.UnsafeAccessorKind.Method, Name = "set_Name")]
+                extern static void SetName(global::Test.SimpleRecord target, string value);
             }
         }
         
-        public string Email
+        public int Age
         {
             get
             {
                 ThrowInvalidOperationIfNotInitialized();
-                return GetEmail(_target);
+                return GetAge(_target);
                 
-                [global::System.Runtime.CompilerServices.UnsafeAccessor(global::System.Runtime.CompilerServices.UnsafeAccessorKind.Method, Name = "get_Email")]
-                extern static string GetEmail(global::Test.User target);
+                [global::System.Runtime.CompilerServices.UnsafeAccessor(global::System.Runtime.CompilerServices.UnsafeAccessorKind.Method, Name = "get_Age")]
+                extern static int GetAge(global::Test.SimpleRecord target);
             }
             
             set
             {
                 ThrowInvalidOperationIfNotInitialized();
-                SetEmail(_target, value);
+                SetAge(_target, value);
                 
-                [global::System.Runtime.CompilerServices.UnsafeAccessor(global::System.Runtime.CompilerServices.UnsafeAccessorKind.Method, Name = "set_Email")]
-                extern static void SetEmail(global::Test.User target, string value);
+                [global::System.Runtime.CompilerServices.UnsafeAccessor(global::System.Runtime.CompilerServices.UnsafeAccessorKind.Method, Name = "set_Age")]
+                extern static void SetAge(global::Test.SimpleRecord target, int value);
             }
         }
         
@@ -76,7 +76,7 @@
             return CallToString(_target);
             
             [global::System.Runtime.CompilerServices.UnsafeAccessor(global::System.Runtime.CompilerServices.UnsafeAccessorKind.Method, Name = "ToString")]
-            extern static string CallToString(global::Test.User target);
+            extern static string CallToString(global::Test.SimpleRecord target);
         }
         
         public bool PrintMembers(global::System.Text.StringBuilder builder)
@@ -84,7 +84,7 @@
             return CallPrintMembers(_target, builder);
             
             [global::System.Runtime.CompilerServices.UnsafeAccessor(global::System.Runtime.CompilerServices.UnsafeAccessorKind.Method, Name = "PrintMembers")]
-            extern static bool CallPrintMembers(global::Test.User target, global::System.Text.StringBuilder builder);
+            extern static bool CallPrintMembers(global::Test.SimpleRecord target, global::System.Text.StringBuilder builder);
         }
         
         public override int GetHashCode()
@@ -92,7 +92,7 @@
             return CallGetHashCode(_target);
             
             [global::System.Runtime.CompilerServices.UnsafeAccessor(global::System.Runtime.CompilerServices.UnsafeAccessorKind.Method, Name = "GetHashCode")]
-            extern static int CallGetHashCode(global::Test.User target);
+            extern static int CallGetHashCode(global::Test.SimpleRecord target);
         }
         
         public override bool Equals(object obj)
@@ -100,26 +100,26 @@
             return CallEquals(_target, obj);
             
             [global::System.Runtime.CompilerServices.UnsafeAccessor(global::System.Runtime.CompilerServices.UnsafeAccessorKind.Method, Name = "Equals")]
-            extern static bool CallEquals(global::Test.User target, object obj);
+            extern static bool CallEquals(global::Test.SimpleRecord target, object obj);
         }
         
-        public bool Equals(global::Test.User other)
+        public bool Equals(global::Test.SimpleRecord other)
         {
             return CallEquals(_target, other);
             
             [global::System.Runtime.CompilerServices.UnsafeAccessor(global::System.Runtime.CompilerServices.UnsafeAccessorKind.Method, Name = "Equals")]
-            extern static bool CallEquals(global::Test.User target, global::Test.User other);
+            extern static bool CallEquals(global::Test.SimpleRecord target, global::Test.SimpleRecord other);
         }
         
-        public void Deconstruct(out string UserName, out string Email)
+        public void Deconstruct(out string Name, out int Age)
         {
-            CallDeconstruct(_target, out UserName, out Email);
+            CallDeconstruct(_target, out Name, out Age);
             
             [global::System.Runtime.CompilerServices.UnsafeAccessor(global::System.Runtime.CompilerServices.UnsafeAccessorKind.Method, Name = "Deconstruct")]
-            extern static void CallDeconstruct(global::Test.User target, out string UserName, out string Email);
+            extern static void CallDeconstruct(global::Test.SimpleRecord target, out string Name, out int Age);
         }
         
-        public static implicit operator UserProxy(global::Test.User target) => new UserProxy(target);
+        public static implicit operator SimpleRecordProxy(global::Test.SimpleRecord target) => new SimpleRecordProxy(target);
         
     }
 }

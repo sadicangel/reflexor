@@ -11,7 +11,7 @@ Whether you're working with immutable data models and need editable views, UI bi
 ## ✨ Features
 
 - 🧬 Generates mutable `struct` proxies for immutable `record` and `class` types.
-- 🛠️ Keeps property names, types, and structure aligned.
+- 🛠️ Keeps member names, types, and structure aligned.
 - 💨 Designed for performance and minimal memory overhead.
 - ✅ Supports `init`-only and positional parameters.
 
