@@ -1,0 +1,29 @@
+﻿namespace Test
+{
+    public partial struct RefInOutMethodsProxy
+    {
+        private readonly global::Test.RefInOutMethods _target;
+        
+        public RefInOutMethodsProxy(global::Test.RefInOutMethods target)
+        {
+            _target = target ?? throw new System.ArgumentNullException(nameof(target));
+        }
+        
+        private void ThrowInvalidOperationIfNotInitialized()
+        {
+            if (_target is null)
+            {
+                throw new global::System.InvalidOperationException("Proxy for 'Test.RefInOutMethods' is uninitialized");
+            }
+        }
+        
+        public void DoWork(ref int x, in int y, out int z)
+        {
+            CallDoWork(_target, ref x, in y, out z);
+            
+            [global::System.Runtime.CompilerServices.UnsafeAccessor(global::System.Runtime.CompilerServices.UnsafeAccessorKind.Method, Name = "DoWork")]
+            extern static void CallDoWork(global::Test.RefInOutMethods target, ref int x, in int y, out int z);
+        }
+        
+    }
+}
