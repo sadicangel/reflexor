@@ -1,0 +1,65 @@
+﻿namespace Test
+{
+    public partial struct VirtualAbstractBaseProxy
+    {
+        private readonly global::Test.VirtualAbstractBase _target;
+        
+        public VirtualAbstractBaseProxy(global::Test.VirtualAbstractBase target)
+        {
+            _target = target ?? throw new System.ArgumentNullException(nameof(target));
+        }
+        
+        private void ThrowInvalidOperationIfNotInitialized()
+        {
+            if (_target is null)
+            {
+                throw new global::System.InvalidOperationException("Proxy for 'Test.VirtualAbstractBase' is uninitialized");
+            }
+        }
+        
+        public string AbstractProp
+        {
+            get
+            {
+                ThrowInvalidOperationIfNotInitialized();
+                return GetAbstractProp(_target);
+                
+                [global::System.Runtime.CompilerServices.UnsafeAccessor(global::System.Runtime.CompilerServices.UnsafeAccessorKind.Method, Name = "get_AbstractProp")]
+                extern static string GetAbstractProp(global::Test.VirtualAbstractBase target);
+            }
+            
+            set
+            {
+                ThrowInvalidOperationIfNotInitialized();
+                SetAbstractProp(_target, value);
+                
+                [global::System.Runtime.CompilerServices.UnsafeAccessor(global::System.Runtime.CompilerServices.UnsafeAccessorKind.Method, Name = "set_AbstractProp")]
+                extern static void SetAbstractProp(global::Test.VirtualAbstractBase target, string value);
+            }
+        }
+        
+        public int VirtualProp
+        {
+            get
+            {
+                ThrowInvalidOperationIfNotInitialized();
+                return GetVirtualProp(_target);
+                
+                [global::System.Runtime.CompilerServices.UnsafeAccessor(global::System.Runtime.CompilerServices.UnsafeAccessorKind.Method, Name = "get_VirtualProp")]
+                extern static int GetVirtualProp(global::Test.VirtualAbstractBase target);
+            }
+            
+            set
+            {
+                ThrowInvalidOperationIfNotInitialized();
+                SetVirtualProp(_target, value);
+                
+                [global::System.Runtime.CompilerServices.UnsafeAccessor(global::System.Runtime.CompilerServices.UnsafeAccessorKind.Method, Name = "set_VirtualProp")]
+                extern static void SetVirtualProp(global::Test.VirtualAbstractBase target, int value);
+            }
+        }
+        
+        public static implicit operator VirtualAbstractBaseProxy(global::Test.VirtualAbstractBase target) => new VirtualAbstractBaseProxy(target);
+        
+    }
+}
