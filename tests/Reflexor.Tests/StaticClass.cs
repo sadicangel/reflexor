@@ -2,7 +2,7 @@
 
 namespace Reflexor.Tests;
 
-public sealed class PartialClass
+public sealed class StaticClass
 {
     [Fact]
     public Task Verify() => TestHelper.Verify("""
@@ -11,14 +11,9 @@ public sealed class PartialClass
         namespace Test;
 
         [GenerateProxy]
-        public partial class PartialClass
+        public static class StaticClass
         {
-            public int Part1 { get; set; }
-        }
-
-        public partial class PartialClass
-        {
-            public string Part2 { get; set; }
+            public static int Version { get; private set; } = 42;
         }
         """);
 }

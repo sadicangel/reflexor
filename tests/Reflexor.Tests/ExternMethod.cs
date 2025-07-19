@@ -5,7 +5,7 @@ namespace Reflexor.Tests;
 public sealed class ExternMethod
 {
     [Fact]
-    public Task Verify() => TestHelper.VerifySourceCode("""
+    public Task Verify() => TestHelper.Verify("""
         using Reflexor;
         using System.Runtime.InteropServices;
 

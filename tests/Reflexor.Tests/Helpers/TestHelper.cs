@@ -17,25 +17,25 @@ internal static class TestHelper
         .Select(x => (string?)x.GetRawConstantValue()!)
         .Where(x => !string.IsNullOrEmpty(x))];
 
-    public static SettingsTask VerifySourceCode(string source, ProjectConfig? config = null)
+    public static SettingsTask Verify(string source, ProjectConfig? config = null)
     {
         var (diagnostics, documents) = GenerateOutput([source], [], config);
 
-        if (diagnostics.Length > 0)
+        return diagnostics switch
+        {
+            [] => Verifier.Verify(documents.Select(document => new Target("txt", document.Content))),
+            [var diagnostic] => Verifier.Verify(diagnostic.ToString()),
+            _ => Fail(diagnostics)
+        };
+
+        static SettingsTask Fail(ImmutableArray<Diagnostic> diagnostics)
         {
             Assert.Fail(string.Join(
                 Environment.NewLine,
                 diagnostics.Select(d => $"{d.Id}: {d.GetMessage(CultureInfo.InvariantCulture)}")));
+
+            return null!; // This line is unreachable but required for compilation.
         }
-
-        return Verify(documents.Select(document => new Target("txt", document.Content)));
-    }
-
-    public static SettingsTask VerifyDiagnostic(string source, ProjectConfig? config = null)
-    {
-        var (diagnostics, _) = GenerateOutput([source], [], config);
-
-        return Verify(Assert.Single(diagnostics));
     }
 
     public static ImmutableDictionary<string, ImmutableArray<IncrementalGeneratorRunStep>> GetTrackedSteps(GeneratorDriverRunResult result) =>

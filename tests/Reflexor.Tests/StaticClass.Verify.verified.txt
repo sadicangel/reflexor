@@ -1,0 +1,1 @@
+﻿(6,21): error RFL0001: Unsupported static type 'Test.StaticClass'. Static types will be supported from .NET 10 onwards.
