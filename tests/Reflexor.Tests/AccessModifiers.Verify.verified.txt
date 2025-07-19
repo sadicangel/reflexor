@@ -1,0 +1,107 @@
+﻿namespace Test
+{
+    public partial struct AccessModifiersProxy
+    {
+        private readonly global::Test.AccessModifiers _target;
+        
+        public AccessModifiersProxy(global::Test.AccessModifiers target)
+        {
+            _target = target ?? throw new System.ArgumentNullException(nameof(target));
+        }
+        
+        private void ThrowInvalidOperationIfNotInitialized()
+        {
+            if (_target is null)
+            {
+                throw new global::System.InvalidOperationException("Proxy for 'Test.AccessModifiers' is uninitialized");
+            }
+        }
+        
+        public int PublicProp
+        {
+            get
+            {
+                ThrowInvalidOperationIfNotInitialized();
+                return GetPublicProp(_target);
+                
+                [global::System.Runtime.CompilerServices.UnsafeAccessor(global::System.Runtime.CompilerServices.UnsafeAccessorKind.Method, Name = "get_PublicProp")]
+                extern static int GetPublicProp(global::Test.AccessModifiers target);
+            }
+            
+            set
+            {
+                ThrowInvalidOperationIfNotInitialized();
+                SetPublicProp(_target, value);
+                
+                [global::System.Runtime.CompilerServices.UnsafeAccessor(global::System.Runtime.CompilerServices.UnsafeAccessorKind.Method, Name = "set_PublicProp")]
+                extern static void SetPublicProp(global::Test.AccessModifiers target, int value);
+            }
+        }
+        
+        public int ProtectedProp
+        {
+            get
+            {
+                ThrowInvalidOperationIfNotInitialized();
+                return GetProtectedProp(_target);
+                
+                [global::System.Runtime.CompilerServices.UnsafeAccessor(global::System.Runtime.CompilerServices.UnsafeAccessorKind.Method, Name = "get_ProtectedProp")]
+                extern static int GetProtectedProp(global::Test.AccessModifiers target);
+            }
+            
+            set
+            {
+                ThrowInvalidOperationIfNotInitialized();
+                SetProtectedProp(_target, value);
+                
+                [global::System.Runtime.CompilerServices.UnsafeAccessor(global::System.Runtime.CompilerServices.UnsafeAccessorKind.Method, Name = "set_ProtectedProp")]
+                extern static void SetProtectedProp(global::Test.AccessModifiers target, int value);
+            }
+        }
+        
+        public int InternalProp
+        {
+            get
+            {
+                ThrowInvalidOperationIfNotInitialized();
+                return GetInternalProp(_target);
+                
+                [global::System.Runtime.CompilerServices.UnsafeAccessor(global::System.Runtime.CompilerServices.UnsafeAccessorKind.Method, Name = "get_InternalProp")]
+                extern static int GetInternalProp(global::Test.AccessModifiers target);
+            }
+            
+            set
+            {
+                ThrowInvalidOperationIfNotInitialized();
+                SetInternalProp(_target, value);
+                
+                [global::System.Runtime.CompilerServices.UnsafeAccessor(global::System.Runtime.CompilerServices.UnsafeAccessorKind.Method, Name = "set_InternalProp")]
+                extern static void SetInternalProp(global::Test.AccessModifiers target, int value);
+            }
+        }
+        
+        public int PrivateProp
+        {
+            get
+            {
+                ThrowInvalidOperationIfNotInitialized();
+                return GetPrivateProp(_target);
+                
+                [global::System.Runtime.CompilerServices.UnsafeAccessor(global::System.Runtime.CompilerServices.UnsafeAccessorKind.Method, Name = "get_PrivateProp")]
+                extern static int GetPrivateProp(global::Test.AccessModifiers target);
+            }
+            
+            set
+            {
+                ThrowInvalidOperationIfNotInitialized();
+                SetPrivateProp(_target, value);
+                
+                [global::System.Runtime.CompilerServices.UnsafeAccessor(global::System.Runtime.CompilerServices.UnsafeAccessorKind.Method, Name = "set_PrivateProp")]
+                extern static void SetPrivateProp(global::Test.AccessModifiers target, int value);
+            }
+        }
+        
+        public static implicit operator AccessModifiersProxy(global::Test.AccessModifiers target) => new AccessModifiersProxy(target);
+        
+    }
+}
