@@ -1,0 +1,40 @@
+﻿namespace Test
+{
+    public partial struct StaticMethodProxy
+    {
+        private readonly global::Test.StaticMethod _target;
+        
+        public StaticMethodProxy(global::Test.StaticMethod target)
+        {
+            _target = target ?? throw new System.ArgumentNullException(nameof(target));
+        }
+        
+        private void ThrowInvalidOperationIfNotInitialized()
+        {
+            if (_target is null)
+            {
+                throw new global::System.InvalidOperationException("Proxy for 'Test.StaticMethod' is uninitialized");
+            }
+        }
+        
+        public static int Version
+        {
+            get
+            {
+                return GetVersion(null!);
+                
+                [global::System.Runtime.CompilerServices.UnsafeAccessor(global::System.Runtime.CompilerServices.UnsafeAccessorKind.StaticMethod, Name = "get_Version")]
+                extern static int GetVersion(global::Test.StaticMethod target);
+            }
+            
+            set
+            {
+                SetVersion(null!, value);
+                
+                [global::System.Runtime.CompilerServices.UnsafeAccessor(global::System.Runtime.CompilerServices.UnsafeAccessorKind.StaticMethod, Name = "set_Version")]
+                extern static void SetVersion(global::Test.StaticMethod target, int value);
+            }
+        }
+        
+    }
+}

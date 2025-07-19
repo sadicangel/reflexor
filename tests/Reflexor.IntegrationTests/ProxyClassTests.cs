@@ -24,4 +24,3 @@ public class UserClass
     public required string UserName { get; init; }
     public required string Email { get; init; }
 }
-

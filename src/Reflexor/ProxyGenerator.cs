@@ -12,12 +12,13 @@ public readonly record struct Proxy(
     string Name,
     string? Namespace,
     string TargetType,
+    bool IsStatic,
     ImmutableArray<Property> Properties,
     ImmutableArray<Method> Methods);
 
-public readonly record struct Property(string Name, string Type, bool IsReadOnly);
+public readonly record struct Property(string Name, string Type, bool IsStatic, bool IsReadOnly);
 public readonly record struct Parameter(string Name, string Type, string Ref);
-public readonly record struct Method(string Name, string ReturnType, ImmutableArray<Parameter> Parameters);
+public readonly record struct Method(string Name, string ReturnType, bool IsStatic, ImmutableArray<Parameter> Parameters);
 
 [Generator]
 public sealed class ProxyGenerator : IIncrementalGenerator
@@ -40,6 +41,7 @@ public sealed class ProxyGenerator : IIncrementalGenerator
                                 properties[propertySymbol.Name] = new Property(
                                     propertySymbol.Name,
                                     propertySymbol.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat),
+                                    propertySymbol.IsStatic,
                                     propertySymbol.IsReadOnly
                                         || (properties.TryGetValue(propertySymbol.Name, out var existing) && existing.IsReadOnly));
                                 break;
@@ -48,6 +50,7 @@ public sealed class ProxyGenerator : IIncrementalGenerator
                                 methods.Add(new Method(
                                     methodSymbol.Name,
                                     methodSymbol.ReturnType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat),
+                                    methodSymbol.IsStatic,
                                     [.. methodSymbol.Parameters.Select(x => new Parameter(
                                         x.Name,
                                         x.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat),
@@ -66,6 +69,7 @@ public sealed class ProxyGenerator : IIncrementalGenerator
                         Name: $"{targetType.Name}Proxy",
                         Namespace: targetType.ContainingNamespace.IsGlobalNamespace ? null : targetType.ContainingNamespace.ToDisplayString(SymbolDisplayFormat.CSharpErrorMessageFormat),
                         TargetType: targetType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat),
+                        IsStatic: targetType.IsStatic,
                         Properties: [.. properties.Values],
                         Methods: [.. methods]);
 
@@ -171,17 +175,28 @@ public static class IndentedTextWriterExtensions
 
     public static void WriteProperty(this IndentedTextWriter writer, string targetType, Property property)
     {
-        writer.WriteLine($"public {property.Type} {property.Name}");
+        var target = property.IsStatic ? "null!" : "_target";
+
+        var accessorKind = property.IsStatic
+            ? "global::System.Runtime.CompilerServices.UnsafeAccessorKind.StaticMethod"
+            : "global::System.Runtime.CompilerServices.UnsafeAccessorKind.Method";
+
+        var modifiers = property.IsStatic ? "static " : string.Empty;
+
+        writer.WriteLine($"public {modifiers}{property.Type} {property.Name}");
         writer.WriteLine("{");
         writer.Indent++;
 
         writer.WriteLine("get");
         writer.WriteLine("{");
         writer.Indent++;
-        writer.WriteLine("ThrowInvalidOperationIfNotInitialized();");
-        writer.WriteLine($"return Get{property.Name}(_target);");
+        if (!property.IsStatic)
+        {
+            writer.WriteLine("ThrowInvalidOperationIfNotInitialized();");
+        }
+        writer.WriteLine($"return Get{property.Name}({target});");
         writer.WriteLine();
-        writer.WriteLine($"[global::System.Runtime.CompilerServices.UnsafeAccessor(global::System.Runtime.CompilerServices.UnsafeAccessorKind.Method, Name = \"get_{property.Name}\")]");
+        writer.WriteLine($"[global::System.Runtime.CompilerServices.UnsafeAccessor({accessorKind}, Name = \"get_{property.Name}\")]");
         writer.WriteLine($"extern static {property.Type} Get{property.Name}({targetType} target);");
         writer.Indent--;
         writer.WriteLine("}");
@@ -192,10 +207,13 @@ public static class IndentedTextWriterExtensions
             writer.WriteLine("set");
             writer.WriteLine("{");
             writer.Indent++;
-            writer.WriteLine("ThrowInvalidOperationIfNotInitialized();");
-            writer.WriteLine($"Set{property.Name}(_target, value);");
+            if (!property.IsStatic)
+            {
+                writer.WriteLine("ThrowInvalidOperationIfNotInitialized();");
+            }
+            writer.WriteLine($"Set{property.Name}({target}, value);");
             writer.WriteLine();
-            writer.WriteLine($"[global::System.Runtime.CompilerServices.UnsafeAccessor(global::System.Runtime.CompilerServices.UnsafeAccessorKind.Method, Name = \"set_{property.Name}\")]");
+            writer.WriteLine($"[global::System.Runtime.CompilerServices.UnsafeAccessor({accessorKind}, Name = \"set_{property.Name}\")]");
             writer.WriteLine($"extern static void Set{property.Name}({targetType} target, {property.Type} value);");
             writer.Indent--;
             writer.WriteLine("}");
