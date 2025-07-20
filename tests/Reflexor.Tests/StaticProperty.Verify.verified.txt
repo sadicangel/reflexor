@@ -1,10 +1,10 @@
 ﻿namespace Test
 {
-    public partial struct StaticMethodProxy
+    public partial struct StaticPropertyProxy
     {
-        private readonly global::Test.StaticMethod _target;
+        private readonly global::Test.StaticProperty _target;
         
-        public StaticMethodProxy(global::Test.StaticMethod target)
+        public StaticPropertyProxy(global::Test.StaticProperty target)
         {
             _target = target ?? throw new System.ArgumentNullException(nameof(target));
         }
@@ -13,7 +13,7 @@
         {
             if (_target is null)
             {
-                throw new global::System.InvalidOperationException("Proxy for 'Test.StaticMethod' is uninitialized");
+                throw new global::System.InvalidOperationException("Proxy for 'Test.StaticProperty' is uninitialized");
             }
         }
         
@@ -24,7 +24,7 @@
                 return GetVersion(null!);
                 
                 [global::System.Runtime.CompilerServices.UnsafeAccessor(global::System.Runtime.CompilerServices.UnsafeAccessorKind.StaticMethod, Name = "get_Version")]
-                extern static int GetVersion(global::Test.StaticMethod target);
+                extern static int GetVersion(global::Test.StaticProperty target);
             }
             
             set
@@ -32,16 +32,8 @@
                 SetVersion(null!, value);
                 
                 [global::System.Runtime.CompilerServices.UnsafeAccessor(global::System.Runtime.CompilerServices.UnsafeAccessorKind.StaticMethod, Name = "set_Version")]
-                extern static void SetVersion(global::Test.StaticMethod target, int value);
+                extern static void SetVersion(global::Test.StaticProperty target, int value);
             }
-        }
-        
-        public static void SetVersion(int version)
-        {
-            CallSetVersion(null!, version);
-            
-            [global::System.Runtime.CompilerServices.UnsafeAccessor(global::System.Runtime.CompilerServices.UnsafeAccessorKind.Method, Name = "SetVersion")]
-            extern static void CallSetVersion(global::Test.StaticMethod target, int version);
         }
         
     }

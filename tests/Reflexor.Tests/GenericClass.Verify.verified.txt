@@ -1,0 +1,50 @@
+﻿namespace Test
+{
+    public partial struct GenericClassProxy<T>
+    {
+        private readonly global::Test.GenericClass<T> _target;
+        
+        public GenericClassProxy(global::Test.GenericClass<T> target)
+        {
+            _target = target ?? throw new System.ArgumentNullException(nameof(target));
+        }
+        
+        private readonly void ThrowInvalidOperationIfNotInitialized()
+        {
+            if (_target is null)
+            {
+                throw new global::System.InvalidOperationException("Proxy for 'Test.GenericClass<T>' is uninitialized");
+            }
+        }
+        
+        public readonly T Value
+        {
+            get
+            {
+                ThrowInvalidOperationIfNotInitialized();
+                return GetValue(_target);
+                
+                [global::System.Runtime.CompilerServices.UnsafeAccessor(global::System.Runtime.CompilerServices.UnsafeAccessorKind.Method, Name = "get_Value")]
+                extern static T GetValue(global::Test.GenericClass<T> target);
+            }
+            
+            set
+            {
+                ThrowInvalidOperationIfNotInitialized();
+                SetValue(_target, value);
+                
+                [global::System.Runtime.CompilerServices.UnsafeAccessor(global::System.Runtime.CompilerServices.UnsafeAccessorKind.Method, Name = "set_Value")]
+                extern static void SetValue(global::Test.GenericClass<T> target, T value);
+            }
+        }
+        
+        public readonly T GetValue()
+        {
+            return CallGetValue(_target);
+            
+            [global::System.Runtime.CompilerServices.UnsafeAccessor(global::System.Runtime.CompilerServices.UnsafeAccessorKind.Method, Name = "GetValue")]
+            extern static T CallGetValue(global::Test.GenericClass<T> target);
+        }
+        
+    }
+}

@@ -15,6 +15,12 @@ public static class IndentedTextWriterExtensions
         }
 
         writer.WriteDeclaration(proxy.Name, "struct", proxy.Modifiers);
+        if (proxy.GenericTypes.Length > 0)
+        {
+            writer.Write("<");
+            writer.Write(string.Join(", ", proxy.GenericTypes));
+            writer.Write(">");
+        }
         writer.WriteLine();
         writer.WriteLine("{");
         writer.Indent++;
@@ -162,7 +168,8 @@ public static class IndentedTextWriterExtensions
         writer.Indent++;
         if (method.ReturnType is not "void")
             writer.Write("return ");
-        writer.Write($"Call{method.Name}(_target");
+        var target = method.Modifiers.HasFlag(Modifiers.Static) ? "null!" : "_target";
+        writer.Write($"Call{method.Name}({target}");
         writer.WriteArguments(method.Parameters, prependComma: true);
         writer.WriteLine(");");
         writer.WriteLine();

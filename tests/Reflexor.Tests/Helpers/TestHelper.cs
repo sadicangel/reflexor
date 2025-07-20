@@ -10,7 +10,7 @@ internal static class TestHelper
 {
     public static readonly ImmutableArray<string> TrackingNames = [.. typeof(ProxyGenerator)
         .Assembly
-        .GetType("AvroSourceGenerator.Parsing.TrackingNames", throwOnError: true)!
+        .GetType("Reflexor.TrackingNames", throwOnError: true)! // TODO: Fix this
         .GetFields()
         .Where(fi => fi.IsLiteral && !fi.IsInitOnly && fi.FieldType == typeof(string))
         .Select(x => (string?)x.GetRawConstantValue()!)

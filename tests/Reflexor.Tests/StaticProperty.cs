@@ -2,7 +2,7 @@
 
 namespace Reflexor.Tests;
 
-public sealed class StaticMethod
+public sealed class StaticProperty
 {
     [Fact]
     public Task Verify() => TestHelper.Verify("""
@@ -11,10 +11,9 @@ public sealed class StaticMethod
         namespace Test;
 
         [GenerateProxy]
-        public class StaticMethod
+        public class StaticProperty
         {
             public static int Version { get; private set; } = 42;
-            private static void SetVersion(int version) => Version = version;
         }
         """);
 }

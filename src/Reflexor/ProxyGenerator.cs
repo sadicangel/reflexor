@@ -15,6 +15,7 @@ public readonly record struct Proxy(
     string TargetType,
     Location TargetLocation,
     Modifiers Modifiers,
+    ImmutableArray<string> GenericTypes,
     ImmutableArray<Property> Properties,
     ImmutableArray<Method> Methods);
 
@@ -85,6 +86,7 @@ public sealed class ProxyGenerator : IIncrementalGenerator
                         Namespace: targetType.ContainingNamespace.IsGlobalNamespace ? null : targetType.ContainingNamespace.ToDisplayString(SymbolDisplayFormat.CSharpErrorMessageFormat),
                         TargetType: targetType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat),
                         TargetLocation: targetType.Locations.First(), // TODO: Use all locations here
+                        GenericTypes: [.. targetType.TypeParameters.Select(x => x.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat))],
                         Modifiers: GetModifiers(targetType),
                         Properties: [.. properties.Values],
                         Methods: [.. methods]);
@@ -109,16 +111,37 @@ public sealed class ProxyGenerator : IIncrementalGenerator
         });
     }
 
-    private static bool CanBeProxied(IPropertySymbol property)
+    private static bool CanBeProxied(ITypeSymbol type)
     {
-        return property.Type switch
+        return type switch
         {
+            { SpecialType: SpecialType.System_Void } => true,
+            ITypeParameterSymbol { ConstraintTypes: var constraintTypes } => constraintTypes.All(CanBeProxied),
             IPointerTypeSymbol { PointedAtType: var pointedAtType } => TypeCanBeProxied(pointedAtType),
-            _ => TypeCanBeProxied(property.Type)
+            _ => TypeCanBeProxied(type)
         };
 
         static bool TypeCanBeProxied(ITypeSymbol type) =>
             type.DeclaredAccessibility is Accessibility.Public;
+    }
+
+    private static bool CanBeProxied(IPropertySymbol property) => CanBeProxied(property.Type);
+
+    private static bool CanBeProxied(IMethodSymbol method)
+    {
+        if (method.MethodKind is not MethodKind.Ordinary || !SyntaxFacts.IsValidIdentifier(method.Name))
+            return false;
+
+        if (!CanBeProxied(method.ReturnType))
+            return false;
+
+        if (method.TypeParameters.Any(x => x.ConstraintTypes.Any(t => !CanBeProxied(t))))
+            return false;
+
+        if (method.Parameters.Any(x => !CanBeProxied(x.Type)))
+            return false;
+
+        return true;
     }
 
     private static Modifiers GetModifiers(INamedTypeSymbol type)
@@ -160,31 +183,9 @@ public sealed class ProxyGenerator : IIncrementalGenerator
         return modifiers;
     }
 
-    private static bool CanBeProxied(IMethodSymbol method)
-    {
-        if (method.MethodKind is not MethodKind.Ordinary || !SyntaxFacts.IsValidIdentifier(method.Name))
-            return false;
-
-        if (!method.ReturnsVoid && method.ReturnType.DeclaredAccessibility is not Accessibility.Public)
-            return false;
-
-        if (method.TypeParameters.Any(x => x.ConstraintTypes.Any(t => t.DeclaredAccessibility is not Accessibility.Public)))
-            return false;
-
-        if (method.Parameters.Any(x => x.Type.DeclaredAccessibility is not Accessibility.Public))
-            return false;
-
-        return true;
-    }
-
     private static Modifiers GetModifiers(IMethodSymbol method)
     {
-        var modifiers = Modifiers.ReadOnly;
-
-        if (method.IsStatic)
-        {
-            modifiers |= Modifiers.Static;
-        }
+        var modifiers = method.IsStatic ? Modifiers.Static : Modifiers.ReadOnly;
 
         if (method.ReturnType is IPointerTypeSymbol)
         {

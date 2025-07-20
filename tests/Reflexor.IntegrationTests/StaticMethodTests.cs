@@ -15,4 +15,5 @@ public class StaticMethodTests
 public class StaticMethod
 {
     public static int Version { get; private set; } = 42;
+    internal static int SetVersion(int version) => Version = version;
 }
