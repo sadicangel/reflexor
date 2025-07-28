@@ -33,14 +33,33 @@ public enum Modifiers
     RefReadOnly = 1 << 7,
 }
 
-public readonly record struct Property(string Name, string Type, Modifiers Modifiers);
+public readonly record struct Property(
+    string Name,
+    string Type,
+    Modifiers Modifiers);
 
-public readonly record struct Parameter(string Name, string Type, string Ref);
-public readonly record struct Method(string Name, string ReturnType, Modifiers Modifiers, ImmutableArray<Parameter> Parameters);
+public readonly record struct Parameter(
+    string Name,
+    string Type,
+    string Ref);
+
+public readonly record struct Method(
+    string Name,
+    string ReturnType,
+    Modifiers Modifiers,
+    ImmutableArray<GenericType> GenericTypes,
+    ImmutableArray<Parameter> Parameters);
+
+public readonly record struct GenericType(string Name, ImmutableArray<string> Constraints);
 
 [Generator]
 public sealed class ProxyGenerator : IIncrementalGenerator
 {
+    private static readonly SymbolDisplayFormat s_fullyQualifiedFormatWithNullable = SymbolDisplayFormat.FullyQualifiedFormat
+        .WithMiscellaneousOptions(
+            SymbolDisplayFormat.FullyQualifiedFormat.MiscellaneousOptions |
+            SymbolDisplayMiscellaneousOptions.IncludeNullableReferenceTypeModifier);
+
     public void Initialize(IncrementalGeneratorInitializationContext context)
     {
         var proxyProvider = context.SyntaxProvider
@@ -65,12 +84,14 @@ public sealed class ProxyGenerator : IIncrementalGenerator
                             case IMethodSymbol methodSymbol when CanBeProxied(methodSymbol):
                                 methods.Add(new Method(
                                     Name: methodSymbol.Name,
+                                    GenericTypes: GetGenericTypes(methodSymbol),
                                     ReturnType: methodSymbol.ReturnType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat),
                                     Modifiers: GetModifiers(methodSymbol),
                                     Parameters: [.. methodSymbol.Parameters.Select(x => new Parameter(
                                         x.Name,
                                         x.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat),
-                                        x.RefKind switch {
+                                        x.RefKind switch
+                                        {
                                             RefKind.Out => "out ",
                                             RefKind.Ref => "ref ",
                                             RefKind.In => "in ",
@@ -117,12 +138,9 @@ public sealed class ProxyGenerator : IIncrementalGenerator
         {
             { SpecialType: SpecialType.System_Void } => true,
             ITypeParameterSymbol { ConstraintTypes: var constraintTypes } => constraintTypes.All(CanBeProxied),
-            IPointerTypeSymbol { PointedAtType: var pointedAtType } => TypeCanBeProxied(pointedAtType),
-            _ => TypeCanBeProxied(type)
+            IPointerTypeSymbol { PointedAtType: var pointedAtType } => CanBeProxied(pointedAtType),
+            _ => type.DeclaredAccessibility is Accessibility.Public,
         };
-
-        static bool TypeCanBeProxied(ITypeSymbol type) =>
-            type.DeclaredAccessibility is Accessibility.Public;
     }
 
     private static bool CanBeProxied(IPropertySymbol property) => CanBeProxied(property.Type);
@@ -203,5 +221,56 @@ public sealed class ProxyGenerator : IIncrementalGenerator
         }
 
         return modifiers;
+    }
+
+    private static ImmutableArray<GenericType> GetGenericTypes(IMethodSymbol method)
+    {
+        if (!method.IsGenericMethod)
+        {
+            return [];
+        }
+
+        var constraints = ImmutableArray.CreateBuilder<GenericType>(method.TypeParameters.Length);
+
+        foreach (var typeParameter in method.TypeParameters)
+        {
+            constraints.Add(new GenericType(
+                Name: typeParameter.Name,
+                Constraints: [.. EnumerateConstraints(typeParameter)]));
+        }
+
+        return constraints.MoveToImmutable();
+
+        static IEnumerable<string> EnumerateConstraints(ITypeParameterSymbol typeParameter)
+        {
+            if (typeParameter.HasValueTypeConstraint && !typeParameter.HasUnmanagedTypeConstraint)
+            {
+                yield return "struct";
+            }
+            if (typeParameter.HasReferenceTypeConstraint)
+            {
+                yield return typeParameter.NullableAnnotation is NullableAnnotation.Annotated ? "class?" : "class";
+            }
+            if (typeParameter.HasNotNullConstraint)
+            {
+                yield return "notnull";
+            }
+            if (typeParameter.HasUnmanagedTypeConstraint)
+            {
+                yield return "unmanaged";
+            }
+            foreach (var constraintType in typeParameter.ConstraintTypes)
+            {
+                yield return constraintType.ToDisplayString(s_fullyQualifiedFormatWithNullable);
+            }
+            if (typeParameter.HasConstructorConstraint)
+            {
+                yield return "new()";
+            }
+            if (typeParameter.AllowsRefLikeType)
+            {
+                yield return "allows ref struct";
+            }
+        }
     }
 }

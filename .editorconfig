@@ -10,6 +10,11 @@ insert_final_newline = true
 # (Please don't specify an indent_size here; that has too many unintended consequences.)
 spelling_exclusion_path = SpellingExclusions.dic
 
+# Guideline:
+[*]
+guidelines = 120
+guidelines_style = 1px dotted 5C5C5C
+
 # Code files
 [*.{cs,csx,vb,vbx}]
 indent_size = 4

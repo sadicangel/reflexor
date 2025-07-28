@@ -39,5 +39,11 @@
     <ProjectReference Include="..\..\src\Reflexor\Reflexor.csproj" />
     <ProjectReference Include="..\..\src\Reflexor.Attributes\Reflexor.Attributes.csproj" />
   </ItemGroup>
+
+  <ItemGroup>
+    <None Update="GenericMethod.Verify.verified.txt">
+      <DependentUpon>GenericMethod.cs</DependentUpon>
+    </None>
+  </ItemGroup>
   
 </Project>

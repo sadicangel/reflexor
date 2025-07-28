@@ -51,7 +51,8 @@ internal readonly record struct GeneratorSetup(CSharpParseOptions ParseOptions, 
             new CSharpCompilationOptions(
                 outputKind: OutputKind.DynamicallyLinkedLibrary,
                 warningLevel: int.MaxValue,
-                allowUnsafe: true));
+                allowUnsafe: true,
+                nullableContextOptions: NullableContextOptions.Annotations));
 
         return compilation;
     }
