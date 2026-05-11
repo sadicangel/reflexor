@@ -1,5 +1,4 @@
-﻿using System.CodeDom.Compiler;
-using System.Collections.Immutable;
+﻿using System.Collections.Immutable;
 using System.Runtime.CompilerServices;
 using System.Text;
 using Microsoft.CodeAnalysis;
@@ -8,263 +7,183 @@ using Microsoft.CodeAnalysis.Text;
 
 namespace Reflexor;
 
-public readonly record struct Proxy(
-    string Name,
-    string? Namespace,
-    string TargetType,
-    ImmutableArray<Property> Properties,
-    ImmutableArray<Method> Methods);
-
-public readonly record struct Property(string Name, string Type, bool IsReadOnly);
-public readonly record struct Parameter(string Name, string Type, string Ref);
-public readonly record struct Method(string Name, string ReturnType, ImmutableArray<Parameter> Parameters);
-
 [Generator]
 public sealed class ProxyGenerator : IIncrementalGenerator
 {
+    private static readonly SymbolDisplayFormat s_fullyQualifiedNullableFormat =
+        SymbolDisplayFormat.FullyQualifiedFormat.WithMiscellaneousOptions(
+            SymbolDisplayFormat.FullyQualifiedFormat.MiscellaneousOptions |
+            SymbolDisplayMiscellaneousOptions.IncludeNullableReferenceTypeModifier);
+
     public void Initialize(IncrementalGeneratorInitializationContext context)
     {
         var proxyProvider = context.SyntaxProvider
-            .ForAttributeWithMetadataName("Reflexor.GenerateProxyAttribute",
-                predicate: (syntax, _) => syntax.IsKind(SyntaxKind.ClassDeclaration) || syntax.IsKind(SyntaxKind.RecordDeclaration),
-                transform: (context, _) =>
+            .ForAttributeWithMetadataName(
+                "Reflexor.ReflexorAttribute",
+                predicate: static (syntax, _) => syntax.IsKind(SyntaxKind.ClassDeclaration) || syntax.IsKind(SyntaxKind.RecordDeclaration),
+                transform: static (context, _) =>
                 {
                     var targetType = Unsafe.As<INamedTypeSymbol>(context.TargetSymbol);
                     var properties = new Dictionary<string, Property>();
                     var methods = new List<Method>();
+
                     foreach (var member in targetType.GetMembers())
                     {
                         switch (member)
                         {
                             case IPropertySymbol propertySymbol when CanBeProxied(propertySymbol):
-                                properties[propertySymbol.Name] = new Property(
-                                    propertySymbol.Name,
-                                    propertySymbol.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat),
-                                    propertySymbol.IsReadOnly
-                                        || (properties.TryGetValue(propertySymbol.Name, out var existing) && existing.IsReadOnly));
+                                properties[propertySymbol.Name] = CreateProperty(propertySymbol, properties);
                                 break;
 
                             case IMethodSymbol methodSymbol when CanBeProxied(methodSymbol):
-                                methods.Add(new Method(
-                                    methodSymbol.Name,
-                                    methodSymbol.ReturnType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat),
-                                    [.. methodSymbol.Parameters.Select(x => new Parameter(
-                                        x.Name,
-                                        x.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat),
-                                        x.RefKind switch {
-                                            RefKind.Out => "out ",
-                                            RefKind.Ref => "ref ",
-                                            RefKind.In => "in ",
-                                            RefKind.RefReadOnlyParameter => "ref readonly ",
-                                            _ => string.Empty
-                                        }))]));
+                                methods.Add(CreateMethod(methodSymbol));
                                 break;
                         }
                     }
 
-                    var proxy = new Proxy(
+                    return new Proxy(
                         Name: $"{targetType.Name}Proxy",
-                        Namespace: targetType.ContainingNamespace.IsGlobalNamespace ? null : targetType.ContainingNamespace.ToDisplayString(SymbolDisplayFormat.CSharpErrorMessageFormat),
-                        TargetType: targetType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat),
+                        Namespace: targetType.ContainingNamespace.IsGlobalNamespace
+                            ? null
+                            : targetType.ContainingNamespace.ToDisplayString(SymbolDisplayFormat.CSharpErrorMessageFormat),
+                        TargetType: targetType.ToDisplayString(s_fullyQualifiedNullableFormat),
+                        DisplayTargetType: targetType.ToDisplayString(SymbolDisplayFormat.CSharpErrorMessageFormat),
+                        IsStatic: targetType.IsStatic,
+                        IsRefLike: targetType.IsRefLikeType,
+                        GenericTypes: GetGenericTypes(targetType.TypeParameters),
                         Properties: [.. properties.Values],
                         Methods: [.. methods]);
-
-                    return proxy;
                 });
-        //.WithTrackingName(TrackingNames.Proxy);
 
-        context.RegisterImplementationSourceOutput(proxyProvider, (context, proxy) =>
-        {
-            using var stream = new StringWriter();
-            using var writer = new IndentedTextWriter(stream);
-            writer.WriteProxy(proxy);
-            writer.Flush();
-            context.AddSource($"{proxy.Name}.g.cs", SourceText.From(stream.ToString(), Encoding.UTF8));
-        });
+        context.RegisterImplementationSourceOutput(
+            proxyProvider,
+            static (context, proxy) =>
+            {
+                var writer = new IndentedStringBuilder();
+                writer.WriteProxy(proxy);
+                context.AddSource($"{proxy.Name}.g.cs", SourceText.From(writer.ToString(), Encoding.UTF8));
+            });
     }
 
-    private static bool CanBeProxied(IPropertySymbol property) =>
-        property.Type.DeclaredAccessibility is Accessibility.Public;
+    private static Property CreateProperty(
+        IPropertySymbol propertySymbol,
+        Dictionary<string, Property> properties)
+    {
+        var isReadOnly = propertySymbol.IsReadOnly ||
+            (properties.TryGetValue(propertySymbol.Name, out var existing) && existing.IsReadOnly);
+
+        return new Property(
+            Name: propertySymbol.Name,
+            Type: propertySymbol.Type.ToDisplayString(s_fullyQualifiedNullableFormat),
+            IsStatic: propertySymbol.IsStatic,
+            IsReadOnly: isReadOnly,
+            IsUnsafe: propertySymbol.Type is IPointerTypeSymbol);
+    }
+
+    private static Method CreateMethod(IMethodSymbol methodSymbol)
+    {
+        return new Method(
+            Name: methodSymbol.Name,
+            ReturnType: methodSymbol.ReturnType.ToDisplayString(s_fullyQualifiedNullableFormat),
+            IsStatic: methodSymbol.IsStatic,
+            IsOverride: methodSymbol.IsOverride,
+            IsReadOnly: !methodSymbol.IsStatic,
+            IsUnsafe: methodSymbol.ReturnType is IPointerTypeSymbol ||
+            methodSymbol.Parameters.Any(static x => x.Type is IPointerTypeSymbol),
+            ReturnsByRef: methodSymbol.RefKind is RefKind.Ref,
+            ReturnsByRefReadonly: methodSymbol.RefKind is RefKind.RefReadOnly,
+            GenericTypes: GetGenericTypes(methodSymbol),
+            Parameters:
+            [
+                .. methodSymbol.Parameters.Select(static x => new Parameter(
+                    x.Name,
+                    x.Type.ToDisplayString(s_fullyQualifiedNullableFormat),
+                    x.RefKind switch
+                    {
+                        RefKind.Out => "out ",
+                        RefKind.Ref => "ref ",
+                        RefKind.In => "in ",
+                        RefKind.RefReadOnlyParameter => "ref readonly ",
+                        _ => string.Empty
+                    }))
+            ]);
+    }
+
+    private static bool CanBeProxied(ITypeSymbol type)
+    {
+        return type switch
+        {
+            { SpecialType: SpecialType.System_Void } => true,
+            ITypeParameterSymbol { ConstraintTypes: var constraintTypes } => constraintTypes.All(CanBeProxied),
+            IPointerTypeSymbol { PointedAtType: var pointedAtType } => CanBeProxied(pointedAtType),
+            _ => type.DeclaredAccessibility is Accessibility.Public,
+        };
+    }
+
+    private static bool CanBeProxied(IPropertySymbol property) => CanBeProxied(property.Type);
 
     private static bool CanBeProxied(IMethodSymbol method)
     {
-        if (method.MethodKind is not MethodKind.Ordinary || !SyntaxFacts.IsValidIdentifier(method.Name))
-            return false;
-
-        if (!method.ReturnsVoid && method.ReturnType.DeclaredAccessibility is not Accessibility.Public)
-            return false;
-
-        if (method.TypeParameters.Any(x => x.ConstraintTypes.Any(t => t.DeclaredAccessibility is not Accessibility.Public)))
-            return false;
-
-        if (method.Parameters.Any(x => x.Type.DeclaredAccessibility is not Accessibility.Public))
-            return false;
-
-        return true;
-    }
-}
-
-public static class IndentedTextWriterExtensions
-{
-    public static void WriteProxy(this IndentedTextWriter writer, Proxy proxy)
-    {
-        if (!string.IsNullOrEmpty(proxy.Namespace))
-        {
-            writer.WriteLine($"namespace {proxy.Namespace}");
-            writer.WriteLine("{");
-            writer.Indent++;
-        }
-
-        writer.WriteLine($"public partial struct {proxy.Name}");
-        writer.WriteLine("{");
-        writer.Indent++;
-        writer.WriteLine($"private readonly {proxy.TargetType} _target;");
-        writer.WriteLine();
-
-        writer.WriteLine($"public {proxy.Name}({proxy.TargetType} target)");
-        writer.WriteLine("{");
-        writer.Indent++;
-        writer.WriteLine("_target = target ?? throw new System.ArgumentNullException(nameof(target));");
-        writer.Indent--;
-        writer.WriteLine("}");
-        writer.WriteLine();
-
-        writer.WriteLine("private void ThrowInvalidOperationIfNotInitialized()");
-        writer.WriteLine("{");
-        writer.Indent++;
-        writer.WriteLine("if (_target is null)");
-        writer.WriteLine("{");
-        writer.Indent++;
-        writer.WriteLine($"throw new global::System.InvalidOperationException(\"Proxy for '{proxy.TargetType[8..]}' is uninitialized\");");
-        writer.Indent--;
-        writer.WriteLine("}");
-        writer.Indent--;
-        writer.WriteLine("}");
-        writer.WriteLine();
-
-        foreach (var property in proxy.Properties)
-        {
-            writer.WriteProperty(proxy.TargetType, property);
-            writer.WriteLine();
-        }
-
-        foreach (var method in proxy.Methods)
-        {
-            writer.WriteMethod(proxy.TargetType, method);
-            writer.WriteLine();
-        }
-
-        writer.WriteLine($"public static implicit operator {proxy.Name}({proxy.TargetType} target) => new {proxy.Name}(target);");
-        writer.WriteLine();
-
-        writer.Indent--;
-        writer.WriteLine("}");
-
-        if (!string.IsNullOrEmpty(proxy.Namespace))
-        {
-            writer.Indent--;
-            writer.Write("}");
-        }
+        return method.MethodKind is MethodKind.Ordinary
+            && SyntaxFacts.IsValidIdentifier(method.Name)
+            && CanBeProxied(method.ReturnType)
+            && method.TypeParameters.All(static x => x.ConstraintTypes.All(CanBeProxied))
+            && method.Parameters.All(static x => CanBeProxied(x.Type));
     }
 
-    public static void WriteProperty(this IndentedTextWriter writer, string targetType, Property property)
+    private static ImmutableArray<GenericType> GetGenericTypes(IMethodSymbol method) =>
+        GetGenericTypes(method.TypeParameters);
+
+    private static ImmutableArray<GenericType> GetGenericTypes(ImmutableArray<ITypeParameterSymbol> typeParameters)
     {
-        writer.WriteLine($"public {property.Type} {property.Name}");
-        writer.WriteLine("{");
-        writer.Indent++;
-
-        writer.WriteLine("get");
-        writer.WriteLine("{");
-        writer.Indent++;
-        writer.WriteLine("ThrowInvalidOperationIfNotInitialized();");
-        writer.WriteLine($"return Get{property.Name}(_target);");
-        writer.WriteLine();
-        writer.WriteLine($"[global::System.Runtime.CompilerServices.UnsafeAccessor(global::System.Runtime.CompilerServices.UnsafeAccessorKind.Method, Name = \"get_{property.Name}\")]");
-        writer.WriteLine($"extern static {property.Type} Get{property.Name}({targetType} target);");
-        writer.Indent--;
-        writer.WriteLine("}");
-
-        if (!property.IsReadOnly)
+        if (typeParameters.Length is 0)
         {
-            writer.WriteLine();
-            writer.WriteLine("set");
-            writer.WriteLine("{");
-            writer.Indent++;
-            writer.WriteLine("ThrowInvalidOperationIfNotInitialized();");
-            writer.WriteLine($"Set{property.Name}(_target, value);");
-            writer.WriteLine();
-            writer.WriteLine($"[global::System.Runtime.CompilerServices.UnsafeAccessor(global::System.Runtime.CompilerServices.UnsafeAccessorKind.Method, Name = \"set_{property.Name}\")]");
-            writer.WriteLine($"extern static void Set{property.Name}({targetType} target, {property.Type} value);");
-            writer.Indent--;
-            writer.WriteLine("}");
+            return [];
         }
 
-        writer.Indent--;
-        writer.WriteLine("}");
-    }
+        var constraints = ImmutableArray.CreateBuilder<GenericType>(typeParameters.Length);
 
-    public static void WriteMethod(this IndentedTextWriter writer, string targetType, Method method)
-    {
-        writer.Write("public ");
-        if (IsOverride(method))
-            writer.Write("override ");
-        writer.Write(method.ReturnType);
-        writer.Write(" ");
-        writer.Write(method.Name);
-        writer.Write("(");
-        writer.WriteParameters(method.Parameters, prependComma: false);
-        writer.WriteLine(")");
-        writer.WriteLine("{");
-        writer.Indent++;
-        if (method.ReturnType is not "void")
-            writer.Write("return ");
-        writer.Write($"Call{method.Name}(_target");
-        writer.WriteArguments(method.Parameters, prependComma: true);
-        writer.WriteLine(");");
-        writer.WriteLine();
-        writer.WriteLine($"[global::System.Runtime.CompilerServices.UnsafeAccessor(global::System.Runtime.CompilerServices.UnsafeAccessorKind.Method, Name = \"{method.Name}\")]");
-        writer.Write($"extern static {method.ReturnType} Call{method.Name}({targetType} target");
-        writer.WriteParameters(method.Parameters, prependComma: true);
-        writer.WriteLine(");");
-        writer.Indent--;
-        writer.WriteLine("}");
-
-        static bool IsOverride(Method method)
+        foreach (var typeParameter in typeParameters)
         {
-            return method.Name switch
+            constraints.Add(
+                new GenericType(
+                    Name: typeParameter.Name,
+                    Constraints: [.. EnumerateConstraints(typeParameter)]));
+        }
+
+        return constraints.MoveToImmutable();
+
+        static IEnumerable<string> EnumerateConstraints(ITypeParameterSymbol typeParameter)
+        {
+            if (typeParameter is { HasValueTypeConstraint: true, HasUnmanagedTypeConstraint: false })
             {
-                nameof(ToString) => method.ReturnType is "string" && method.Parameters is [],
-                nameof(Equals) => method.ReturnType is "bool" && method.Parameters is [{ Type: "object" }],
-                nameof(GetHashCode) => method.ReturnType is "int" && method.Parameters is [],
-                _ => false,
-            };
-        }
-    }
+                yield return "struct";
+            }
 
+            if (typeParameter.HasReferenceTypeConstraint)
+            {
+                yield return typeParameter.NullableAnnotation is NullableAnnotation.Annotated ? "class?" : "class";
+            }
 
-    public static void WriteParameters(this IndentedTextWriter writer, ImmutableArray<Parameter> parameters, bool prependComma)
-    {
-        var isFirst = !prependComma;
-        foreach (var parameter in parameters)
-        {
-            if (!isFirst) writer.Write(", ");
-            else isFirst = false;
-            writer.Write(parameter.Ref);
-            writer.Write(parameter.Type);
-            writer.Write(" ");
-            writer.Write(parameter.Name);
-        }
-    }
+            if (typeParameter.HasNotNullConstraint)
+            {
+                yield return "notnull";
+            }
 
-    public static void WriteArguments(this IndentedTextWriter writer, ImmutableArray<Parameter> parameters, bool prependComma)
-    {
-        var isFirst = !prependComma;
-        foreach (var parameter in parameters)
-        {
-            if (!isFirst) writer.Write(", ");
-            else isFirst = false;
-            writer.Write(parameter.Ref);
-            writer.Write(parameter.Name);
+            if (typeParameter.HasUnmanagedTypeConstraint)
+            {
+                yield return "unmanaged";
+            }
+
+            foreach (var constraintType in typeParameter.ConstraintTypes)
+            {
+                yield return constraintType.ToDisplayString(s_fullyQualifiedNullableFormat);
+            }
+
+            if (typeParameter.HasConstructorConstraint)
+            {
+                yield return "new()";
+            }
         }
     }
 }

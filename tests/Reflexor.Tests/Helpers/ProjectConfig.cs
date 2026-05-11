@@ -6,5 +6,5 @@ internal sealed record class ProjectConfig(
     LanguageVersion LanguageVersion,
     Dictionary<string, string> GlobalOptions)
 {
-    public static readonly ProjectConfig Default = new(LanguageVersion.Default, []);
+    public static readonly ProjectConfig Default = new ProjectConfig(LanguageVersion.Default, []);
 }

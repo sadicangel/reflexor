@@ -14,6 +14,7 @@ Whether you're working with immutable data models and need editable views, UI bi
 - 🛠️ Keeps property names, types, and structure aligned.
 - 💨 Designed for performance and minimal memory overhead.
 - ✅ Supports `init`-only and positional parameters.
+- ✅ Supports static members and static classes on .NET 10.
 
 ---
 
@@ -22,7 +23,7 @@ Whether you're working with immutable data models and need editable views, UI bi
 ### Original Record
 
 ```csharp
-[GenerateProxy]
+[Reflexor]
 public record User(string UserName, int Age);
 ```
 
@@ -54,18 +55,18 @@ Console.WriteLine(user.UserName);
 
 ### 1. Install the NuGet Package
 
-> Coming soon to [NuGet](https://www.nuget.org/)
-
 ```bash
 dotnet add package Reflexor
 ```
 
+Reflexor targets .NET 10 consumers. The source generator itself is packaged as a `netstandard2.0` analyzer.
+
 ### 2. Annotate Your Types
 
-Just add a `[GenerateProxy]` attribute to any immutable `record` or `class`.
+Just add a `[Reflexor]` attribute to any immutable `record` or `class`.
 
 ```csharp
-[GenerateProxy]
+[Reflexor]
 public record Order(int Id, DateTime Date, string Customer);
 ```
 

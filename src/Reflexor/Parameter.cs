@@ -1,0 +1,6 @@
+namespace Reflexor;
+
+public readonly record struct Parameter(
+    string Name,
+    string Type,
+    string Ref);

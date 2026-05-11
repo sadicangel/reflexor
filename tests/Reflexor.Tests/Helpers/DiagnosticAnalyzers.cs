@@ -25,16 +25,14 @@ internal static class DiagnosticAnalyzers
 
     private static string GetAnalyzersFolder(string sdkHint)
     {
-        using var process = new Process
+        using var process = new Process();
+        process.StartInfo = new ProcessStartInfo
         {
-            StartInfo = new ProcessStartInfo
-            {
-                FileName = "dotnet",
-                Arguments = "--list-sdks",
-                RedirectStandardOutput = true,
-                UseShellExecute = false,
-                CreateNoWindow = true
-            }
+            FileName = "dotnet",
+            Arguments = "--list-sdks",
+            RedirectStandardOutput = true,
+            UseShellExecute = false,
+            CreateNoWindow = true
         };
 
         process.Start();

@@ -12,7 +12,7 @@ public class VerifySimple
 
             namespace Test;
 
-            [GenerateProxy]
+            [Reflexor]
             public class User
             {
                 public string UserName { get; init; }
@@ -29,7 +29,7 @@ public class VerifySimple
 
             namespace Test;
 
-            [GenerateProxy]
+            [Reflexor]
             public record User(string UserName, string Email);
             """);
     }
