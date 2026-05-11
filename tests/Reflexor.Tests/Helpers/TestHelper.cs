@@ -9,44 +9,27 @@ public readonly record struct Document(string FileName, string Content);
 
 internal static class TestHelper
 {
-    public static readonly ImmutableArray<string> TrackingNames = [.. typeof(ProxyGenerator)
-        .Assembly
-        .GetType("AvroSourceGenerator.Parsing.TrackingNames", throwOnError: true)!
-        .GetFields()
-        .Where(fi => fi.IsLiteral && !fi.IsInitOnly && fi.FieldType == typeof(string))
-        .Select(x => (string?)x.GetRawConstantValue()!)
-        .Where(x => !string.IsNullOrEmpty(x))];
-
     public static SettingsTask VerifySourceCode(string source, ProjectConfig? config = null)
     {
         var (diagnostics, documents) = GenerateOutput([source], [], config);
 
         if (diagnostics.Length > 0)
         {
-            Assert.Fail(string.Join(
-                Environment.NewLine,
-                diagnostics.Select(d => $"{d.Id}: {d.GetMessage(CultureInfo.InvariantCulture)}")));
+            Assert.Fail(
+                string.Join(
+                    Environment.NewLine,
+                    diagnostics.Select(d => $"{d.Id}: {d.GetMessage(CultureInfo.InvariantCulture)}")));
         }
 
         return Verify(documents.Select(document => new Target("txt", document.Content)));
     }
-
-    public static SettingsTask VerifyDiagnostic(string source, ProjectConfig? config = null)
-    {
-        var (diagnostics, _) = GenerateOutput([source], [], config);
-
-        return Verify(Assert.Single(diagnostics));
-    }
-
-    public static ImmutableDictionary<string, ImmutableArray<IncrementalGeneratorRunStep>> GetTrackedSteps(GeneratorDriverRunResult result) =>
-        result.Results[0].TrackedSteps.Where(x => TrackingNames.Contains(x.Key)).ToImmutableDictionary();
 
     public static (ImmutableArray<Diagnostic> Diagnostics, ImmutableArray<Document> Documents) GenerateOutput(
         ImmutableArray<string> sourceTexts,
         ImmutableArray<string> additionalTexts,
         ProjectConfig? projectConfig = null)
     {
-        var (parseOptions, optionsProvider, compilation, generatorDriver) =
+        var (_, optionsProvider, compilation, generatorDriver) =
             GeneratorSetup.Create(sourceTexts, additionalTexts, projectConfig);
 
         generatorDriver.RunGeneratorsAndUpdateCompilation(compilation, out compilation, out var diagnostics);

@@ -7,7 +7,7 @@ public class ProxyRecordTests
     {
         var user = new UserRecord("username", "email");
 
-        var proxy = new UserRecordProxy(user)
+        _ = new UserRecordProxy(user)
         {
             UserName = "john_doe",
             Email = "john_doe@email.com"
@@ -18,6 +18,4 @@ public class ProxyRecordTests
     }
 }
 
-
-[GenerateProxy]
-public record UserRecord(string UserName, string Email);
+[Reflexor] public record UserRecord(string UserName, string Email);

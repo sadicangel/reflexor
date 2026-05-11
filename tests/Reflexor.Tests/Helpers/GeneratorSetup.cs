@@ -1,11 +1,9 @@
 ﻿using System.CodeDom.Compiler;
 using System.Collections.Immutable;
 using System.Diagnostics.CodeAnalysis;
-using System.Text;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Diagnostics;
-using Microsoft.CodeAnalysis.Text;
 
 namespace Reflexor.Tests.Helpers;
 
@@ -21,11 +19,10 @@ internal readonly record struct GeneratorSetup(CSharpParseOptions ParseOptions, 
         var optionsProvider = CreateOptionsProvider(projectConfig);
         var generatorDriver = CreateGeneratorDriver(additionalTexts, parseOptions, optionsProvider);
         var compilation = CreateCompilation(sourceTexts, parseOptions);
-        return new(parseOptions, optionsProvider, compilation, generatorDriver);
+        return new GeneratorSetup(parseOptions, optionsProvider, compilation, generatorDriver);
     }
 
-    public static CSharpParseOptions CreateParseOptions(ProjectConfig projectConfig) =>
-      new(projectConfig.LanguageVersion);
+    public static CSharpParseOptions CreateParseOptions(ProjectConfig projectConfig) => new CSharpParseOptions(projectConfig.LanguageVersion);
 
     public static AnalyzerConfigOptionsProvider CreateOptionsProvider(ProjectConfig projectConfig) =>
         new AnalyzerConfigOptionsProviderImplementation(projectConfig.GlobalOptions);
@@ -38,9 +35,10 @@ internal readonly record struct GeneratorSetup(CSharpParseOptions ParseOptions, 
         var references = AppDomain.CurrentDomain.GetAssemblies()
             .Where(assembly => !assembly.IsDynamic && !string.IsNullOrWhiteSpace(assembly.Location))
             .Select(assembly => MetadataReference.CreateFromFile(assembly.Location))
-            .Concat([
+            .Concat(
+            [
                 MetadataReference.CreateFromFile(typeof(ProxyGenerator).Assembly.Location),
-                MetadataReference.CreateFromFile(typeof(GenerateProxyAttribute).Assembly.Location),
+                MetadataReference.CreateFromFile(typeof(ReflexorAttribute).Assembly.Location),
                 MetadataReference.CreateFromFile(typeof(GeneratedCodeAttribute).Assembly.Location),
             ]);
 
@@ -50,7 +48,9 @@ internal readonly record struct GeneratorSetup(CSharpParseOptions ParseOptions, 
             references,
             new CSharpCompilationOptions(
                 outputKind: OutputKind.DynamicallyLinkedLibrary,
-                warningLevel: int.MaxValue));
+                warningLevel: int.MaxValue,
+                allowUnsafe: true,
+                nullableContextOptions: NullableContextOptions.Annotations));
 
         return compilation;
     }
@@ -62,7 +62,7 @@ internal readonly record struct GeneratorSetup(CSharpParseOptions ParseOptions, 
     {
         var generatorDriver = CSharpGeneratorDriver.Create(
             generators: [new ProxyGenerator().AsSourceGenerator()],
-            additionalTexts: [.. additionalTexts.Select(text => new AdditionalTextImplementation(text))],
+            additionalTexts: null,
             parseOptions: parseOptions,
             optionsProvider: optionsProvider,
             driverOptions: new GeneratorDriverOptions(
@@ -70,14 +70,6 @@ internal readonly record struct GeneratorSetup(CSharpParseOptions ParseOptions, 
                 trackIncrementalGeneratorSteps: true));
 
         return generatorDriver;
-    }
-
-    private sealed class AdditionalTextImplementation(string content) : AdditionalText
-    {
-        public override string Path => $"schema.avsc";
-
-        public override SourceText? GetText(CancellationToken cancellationToken = default) =>
-            SourceText.From(content, Encoding.UTF8);
     }
 
     private sealed class AnalyzerConfigOptionsProviderImplementation(IEnumerable<KeyValuePair<string, string>> globalOptions)
@@ -91,11 +83,7 @@ internal readonly record struct GeneratorSetup(CSharpParseOptions ParseOptions, 
         private sealed class AnalyzerConfigOptionsImplementation(IEnumerable<KeyValuePair<string, string>> options)
             : AnalyzerConfigOptions
         {
-            private readonly Dictionary<string, string> _options = new([
-                .. options.Select(kvp => new KeyValuePair<string, string>($"build_property.{kvp.Key}", kvp.Value))
-            ]);
-
-            public string this[string key] { get => _options[key]; init => _options[key] = value; }
+            private readonly Dictionary<string, string> _options = new Dictionary<string, string>([.. options.Select(kvp => new KeyValuePair<string, string>($"build_property.{kvp.Key}", kvp.Value))]);
 
             public override bool TryGetValue(string key, [MaybeNullWhen(false)] out string value)
                 => _options.TryGetValue(key, out value);

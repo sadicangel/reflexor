@@ -7,7 +7,7 @@ public static class ModuleInitializer
     [ModuleInitializer]
     public static void Init()
     {
-        DerivePathInfo((sourceFile, projectDirectory, type, method) => new(
+        DerivePathInfo((_, projectDirectory, type, method) => new PathInfo(
             directory: projectDirectory,
             typeName: type.Name,
             methodName: method.Name));
