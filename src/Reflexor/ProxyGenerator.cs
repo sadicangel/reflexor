@@ -63,6 +63,21 @@ public sealed class ProxyGenerator : IIncrementalGenerator
                 writer.WriteProxy(proxy);
                 context.AddSource($"{proxy.Name}.g.cs", SourceText.From(writer.ToString(), Encoding.UTF8));
             });
+
+        context.RegisterPostInitializationOutput(static context =>
+        {
+            context.AddSource(
+                "ReflexorAttribute.g.cs",
+                SourceText.From(
+                    """
+                    namespace Reflexor
+                    {
+                        [global::System.AttributeUsage(global::System.AttributeTargets.Class)]
+                        internal sealed class ReflexorAttribute : global::System.Attribute { }
+                    }
+                    """,
+                    Encoding.UTF8));
+        });
     }
 
     private static Property CreateProperty(

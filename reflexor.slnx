@@ -15,7 +15,6 @@
     <File Path="README.md" />
     <File Path="SpellingExclusions.dic" />
   </Folder>
-  <Project Path="src/Reflexor.Attributes/Reflexor.Attributes.csproj" Id="3aa204fd-84f3-42a1-b6a1-ccad75f95c32" />
   <Project Path="src/Reflexor/Reflexor.csproj" />
   <Project Path="tests/Reflexor.IntegrationTests/Reflexor.IntegrationTests.csproj" Id="d1f4751a-311b-44a3-8d25-c7c07f804ecd" />
   <Project Path="tests/Reflexor.Tests/Reflexor.Tests.csproj" />

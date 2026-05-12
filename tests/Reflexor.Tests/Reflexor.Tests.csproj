@@ -37,7 +37,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Reflexor\Reflexor.csproj" />
-    <ProjectReference Include="..\..\src\Reflexor.Attributes\Reflexor.Attributes.csproj" />
   </ItemGroup>
   
 </Project>

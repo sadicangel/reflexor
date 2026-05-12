@@ -40,13 +40,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Reflexor.Attributes\Reflexor.Attributes.csproj" PrivateAssets="All" />
-  </ItemGroup>
-
-  <ItemGroup>
     <None Include="$(OutputPath)\$(AssemblyName).dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
-    <None Include="$(OutputPath)\$(AssemblyName).Attributes.dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
-    <None Include="$(OutputPath)\$(AssemblyName).Attributes.dll" Pack="true" PackagePath="lib/netstandard2.0" Visible="true" />
   </ItemGroup>
 
 </Project>
