@@ -46,6 +46,7 @@ public sealed class ProxyGenerator : IIncrementalGenerator
                         Namespace: targetType.ContainingNamespace.IsGlobalNamespace
                             ? null
                             : targetType.ContainingNamespace.ToDisplayString(SymbolDisplayFormat.CSharpErrorMessageFormat),
+                        Accessibility: targetType.DeclaredAccessibility,
                         TargetType: targetType.ToDisplayString(s_fullyQualifiedNullableFormat),
                         DisplayTargetType: targetType.ToDisplayString(SymbolDisplayFormat.CSharpErrorMessageFormat),
                         IsStatic: targetType.IsStatic,

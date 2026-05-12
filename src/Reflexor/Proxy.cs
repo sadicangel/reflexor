@@ -1,10 +1,12 @@
-using System.Collections.Immutable;
+﻿using System.Collections.Immutable;
+using Microsoft.CodeAnalysis;
 
 namespace Reflexor;
 
 public readonly record struct Proxy(
     string Name,
     string? Namespace,
+    Accessibility Accessibility,
     string TargetType,
     string DisplayTargetType,
     bool IsStatic,
