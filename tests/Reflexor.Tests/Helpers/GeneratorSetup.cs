@@ -38,7 +38,6 @@ internal readonly record struct GeneratorSetup(CSharpParseOptions ParseOptions, 
             .Concat(
             [
                 MetadataReference.CreateFromFile(typeof(ProxyGenerator).Assembly.Location),
-                MetadataReference.CreateFromFile(typeof(ReflexorAttribute).Assembly.Location),
                 MetadataReference.CreateFromFile(typeof(GeneratedCodeAttribute).Assembly.Location),
             ]);
 

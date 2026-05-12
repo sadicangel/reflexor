@@ -42,7 +42,8 @@ internal static class TestHelper
         diagnostics = diagnostics.AddRange(analyzerDiagnostics);
 
         var documents = compilation.SyntaxTrees
-            .Where(st => !string.IsNullOrEmpty(st.FilePath))
+            .Where(st => !string.IsNullOrEmpty(st.FilePath) &&
+                !st.FilePath.Replace('\\', '/').EndsWith("/ReflexorAttribute.g.cs", StringComparison.Ordinal))
             .Select(st => new Document(st.FilePath.Replace('\\', '/'), st.ToString()))
             .ToImmutableArray();
 
