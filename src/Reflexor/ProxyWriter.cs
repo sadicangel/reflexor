@@ -1,4 +1,5 @@
 ﻿using System.Collections.Immutable;
+using Microsoft.CodeAnalysis;
 
 namespace Reflexor;
 
@@ -67,7 +68,19 @@ public static class ProxyWriter
 
         private void WriteProxyDeclaration(Proxy proxy)
         {
-            writer.Write("public ");
+            var accessibility = proxy.Accessibility switch
+            {
+                Accessibility.NotApplicable => string.Empty,
+                Accessibility.Private => "private",
+                Accessibility.ProtectedAndInternal => "private protected",
+                Accessibility.Protected => "protected",
+                Accessibility.Internal => "internal",
+                Accessibility.ProtectedOrInternal => "protected internal",
+                Accessibility.Public => "public",
+                _ => throw new InvalidOperationException($"Unknown accessibility: '{proxy.Accessibility}'")
+            };
+            writer.Write(accessibility);
+            writer.Write(" ");
 
             if (proxy.IsStatic)
             {
