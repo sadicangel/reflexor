@@ -64,5 +64,19 @@ namespace Test
         public static implicit operator UserProxy(global::Test.User target) => new UserProxy(target);
 
     }
+
+    public static partial class UserProxyExtensions
+    {
+        public static global::Test.User Mutate(this global::Test.User target, global::System.Action<UserProxy> mutation)
+        {
+            if (mutation is null)
+            {
+                throw new global::System.ArgumentNullException(nameof(mutation));
+            }
+
+            mutation(new UserProxy(target));
+            return target;
+        }
+    }
 }
 #nullable restore

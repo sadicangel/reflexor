@@ -5,6 +5,8 @@ namespace Reflexor;
 public readonly record struct Method(
     string Name,
     string ReturnType,
+    string AccessorTargetType,
+    string AccessorDisplayTargetType,
     bool IsStatic,
     bool IsOverride,
     bool IsReadOnly,

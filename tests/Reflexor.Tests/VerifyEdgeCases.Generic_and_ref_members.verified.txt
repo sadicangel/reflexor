@@ -73,5 +73,20 @@ namespace Test
         public static implicit operator GenericRefMembersProxy<T>(global::Test.GenericRefMembers<T> target) => new GenericRefMembersProxy<T>(target);
 
     }
+
+    public static partial class GenericRefMembersProxyExtensions
+    {
+        public static global::Test.GenericRefMembers<T> Mutate<T>(this global::Test.GenericRefMembers<T> target, global::System.Action<GenericRefMembersProxy<T>> mutation)
+            where T : class
+        {
+            if (mutation is null)
+            {
+                throw new global::System.ArgumentNullException(nameof(mutation));
+            }
+
+            mutation(new GenericRefMembersProxy<T>(target));
+            return target;
+        }
+    }
 }
 #nullable restore

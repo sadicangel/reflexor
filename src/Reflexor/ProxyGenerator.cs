@@ -25,19 +25,28 @@ public sealed class ProxyGenerator : IIncrementalGenerator
                 {
                     var targetType = Unsafe.As<INamedTypeSymbol>(context.TargetSymbol);
                     var properties = new Dictionary<string, Property>();
-                    var methods = new List<Method>();
+                    var methods = new Dictionary<string, Method>();
 
-                    foreach (var member in targetType.GetMembers())
+                    foreach (var type in EnumerateTargetAndBaseTypes(targetType))
                     {
-                        switch (member)
+                        foreach (var member in type.GetMembers())
                         {
-                            case IPropertySymbol propertySymbol when CanBeProxied(propertySymbol):
-                                properties[propertySymbol.Name] = CreateProperty(propertySymbol, properties);
-                                break;
+                            switch (member)
+                            {
+                                case IPropertySymbol propertySymbol when CanBeProxied(propertySymbol) &&
+                                    !properties.ContainsKey(propertySymbol.Name):
+                                    properties[propertySymbol.Name] = CreateProperty(propertySymbol, properties);
+                                    break;
 
-                            case IMethodSymbol methodSymbol when CanBeProxied(methodSymbol):
-                                methods.Add(CreateMethod(methodSymbol));
-                                break;
+                                case IMethodSymbol methodSymbol when CanBeProxied(methodSymbol):
+                                    var key = GetMethodKey(methodSymbol);
+                                    if (!methods.ContainsKey(key))
+                                    {
+                                        methods[key] = CreateMethod(methodSymbol);
+                                    }
+
+                                    break;
+                            }
                         }
                     }
 
@@ -53,7 +62,7 @@ public sealed class ProxyGenerator : IIncrementalGenerator
                         IsRefLike: targetType.IsRefLikeType,
                         GenericTypes: GetGenericTypes(targetType.TypeParameters),
                         Properties: [.. properties.Values],
-                        Methods: [.. methods]);
+                        Methods: [.. methods.Values]);
                 });
 
         context.RegisterImplementationSourceOutput(
@@ -91,6 +100,8 @@ public sealed class ProxyGenerator : IIncrementalGenerator
         return new Property(
             Name: propertySymbol.Name,
             Type: propertySymbol.Type.ToDisplayString(s_fullyQualifiedNullableFormat),
+            AccessorTargetType: propertySymbol.ContainingType.ToDisplayString(s_fullyQualifiedNullableFormat),
+            AccessorDisplayTargetType: propertySymbol.ContainingType.ToDisplayString(SymbolDisplayFormat.CSharpErrorMessageFormat),
             IsStatic: propertySymbol.IsStatic,
             IsReadOnly: isReadOnly,
             IsUnsafe: propertySymbol.Type is IPointerTypeSymbol);
@@ -101,8 +112,10 @@ public sealed class ProxyGenerator : IIncrementalGenerator
         return new Method(
             Name: methodSymbol.Name,
             ReturnType: methodSymbol.ReturnType.ToDisplayString(s_fullyQualifiedNullableFormat),
+            AccessorTargetType: methodSymbol.ContainingType.ToDisplayString(s_fullyQualifiedNullableFormat),
+            AccessorDisplayTargetType: methodSymbol.ContainingType.ToDisplayString(SymbolDisplayFormat.CSharpErrorMessageFormat),
             IsStatic: methodSymbol.IsStatic,
-            IsOverride: methodSymbol.IsOverride,
+            IsOverride: CanBeProxyOverride(methodSymbol),
             IsReadOnly: !methodSymbol.IsStatic,
             IsUnsafe: methodSymbol.ReturnType is IPointerTypeSymbol ||
             methodSymbol.Parameters.Any(static x => x.Type is IPointerTypeSymbol),
@@ -123,6 +136,37 @@ public sealed class ProxyGenerator : IIncrementalGenerator
                         _ => string.Empty
                     }))
             ]);
+    }
+
+    private static bool CanBeProxyOverride(IMethodSymbol methodSymbol) =>
+        methodSymbol is { IsOverride: true, OverriddenMethod.ContainingType.SpecialType: SpecialType.System_Object };
+
+    private static IEnumerable<INamedTypeSymbol> EnumerateTargetAndBaseTypes(INamedTypeSymbol targetType)
+    {
+        for (var type = targetType; type is not null && type.SpecialType is not SpecialType.System_Object; type = type.BaseType)
+        {
+            yield return type;
+        }
+    }
+
+    private static string GetMethodKey(IMethodSymbol methodSymbol)
+    {
+        var builder = new StringBuilder();
+        builder.Append(methodSymbol.Name);
+        builder.Append('`');
+        builder.Append(methodSymbol.TypeParameters.Length);
+        builder.Append('(');
+
+        foreach (var parameter in methodSymbol.Parameters)
+        {
+            builder.Append(parameter.RefKind);
+            builder.Append(' ');
+            builder.Append(parameter.Type.ToDisplayString(s_fullyQualifiedNullableFormat));
+            builder.Append(';');
+        }
+
+        builder.Append(')');
+        return builder.ToString();
     }
 
     private static bool CanBeProxied(ITypeSymbol type)
