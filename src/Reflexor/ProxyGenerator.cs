@@ -1,5 +1,4 @@
-﻿using System.Collections.Immutable;
-using System.Runtime.CompilerServices;
+﻿using System.Runtime.CompilerServices;
 using System.Text;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
@@ -10,11 +9,6 @@ namespace Reflexor;
 [Generator]
 public sealed class ProxyGenerator : IIncrementalGenerator
 {
-    private static readonly SymbolDisplayFormat s_fullyQualifiedNullableFormat =
-        SymbolDisplayFormat.FullyQualifiedFormat.WithMiscellaneousOptions(
-            SymbolDisplayFormat.FullyQualifiedFormat.MiscellaneousOptions |
-            SymbolDisplayMiscellaneousOptions.IncludeNullableReferenceTypeModifier);
-
     public void Initialize(IncrementalGeneratorInitializationContext context)
     {
         var proxyProvider = context.SyntaxProvider
@@ -27,22 +21,21 @@ public sealed class ProxyGenerator : IIncrementalGenerator
                     var properties = new Dictionary<string, Property>();
                     var methods = new Dictionary<string, Method>();
 
-                    foreach (var type in EnumerateTargetAndBaseTypes(targetType))
+                    foreach (var type in targetType.EnumerateSelfAndAncestors())
                     {
                         foreach (var member in type.GetMembers())
                         {
                             switch (member)
                             {
-                                case IPropertySymbol propertySymbol when CanBeProxied(propertySymbol) &&
-                                    !properties.ContainsKey(propertySymbol.Name):
-                                    properties[propertySymbol.Name] = CreateProperty(propertySymbol, properties);
+                                case IPropertySymbol propertySymbol when propertySymbol.CanBeProxied() && !properties.ContainsKey(propertySymbol.Name):
+                                    properties[propertySymbol.Name] = Property.FromSymbol(propertySymbol);
                                     break;
 
-                                case IMethodSymbol methodSymbol when CanBeProxied(methodSymbol):
+                                case IMethodSymbol methodSymbol when methodSymbol.CanBeProxied():
                                     var key = GetMethodKey(methodSymbol);
                                     if (!methods.ContainsKey(key))
                                     {
-                                        methods[key] = CreateMethod(methodSymbol);
+                                        methods[key] = Method.FromSymbol(methodSymbol);
                                     }
 
                                     break;
@@ -51,14 +44,14 @@ public sealed class ProxyGenerator : IIncrementalGenerator
                     }
 
                     return new Proxy(
-                        Name: GetSafeGeneratedIdentifier(targetType.Name, "Proxy"),
-                        Namespace: GetSafeNamespace(targetType.ContainingNamespace),
+                        Name: $"{targetType.Name}Proxy",
+                        Namespace: targetType.ContainingNamespace.GetSafeNamespace(),
                         Accessibility: targetType.DeclaredAccessibility,
-                        TargetType: targetType.ToDisplayString(s_fullyQualifiedNullableFormat),
+                        TargetType: targetType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedNullableFormat),
                         DisplayTargetType: targetType.ToDisplayString(SymbolDisplayFormat.CSharpErrorMessageFormat),
                         IsStatic: targetType.IsStatic,
                         IsRefLike: targetType.IsRefLikeType,
-                        GenericTypes: GetGenericTypes(targetType.TypeParameters),
+                        GenericTypes: targetType.GetGenericTypes(),
                         Properties: [.. properties.Values],
                         Methods: [.. methods.Values]);
                 });
@@ -88,93 +81,6 @@ public sealed class ProxyGenerator : IIncrementalGenerator
         });
     }
 
-    private static Property CreateProperty(
-        IPropertySymbol propertySymbol,
-        Dictionary<string, Property> properties)
-    {
-        var isReadOnly = propertySymbol.IsReadOnly ||
-            (properties.TryGetValue(propertySymbol.Name, out var existing) && existing.IsReadOnly);
-
-        return new Property(
-            Name: GetSafeIdentifier(propertySymbol.Name),
-            MetadataName: propertySymbol.Name,
-            Type: propertySymbol.Type.ToDisplayString(s_fullyQualifiedNullableFormat),
-            AccessorTargetType: propertySymbol.ContainingType.ToDisplayString(s_fullyQualifiedNullableFormat),
-            AccessorDisplayTargetType: propertySymbol.ContainingType.ToDisplayString(SymbolDisplayFormat.CSharpErrorMessageFormat),
-            IsStatic: propertySymbol.IsStatic,
-            IsReadOnly: isReadOnly,
-            IsUnsafe: propertySymbol.Type is IPointerTypeSymbol);
-    }
-
-    private static Method CreateMethod(IMethodSymbol methodSymbol)
-    {
-        return new Method(
-            Name: GetSafeIdentifier(methodSymbol.Name),
-            MetadataName: methodSymbol.Name,
-            ReturnType: methodSymbol.ReturnType.ToDisplayString(s_fullyQualifiedNullableFormat),
-            AccessorTargetType: methodSymbol.ContainingType.ToDisplayString(s_fullyQualifiedNullableFormat),
-            AccessorDisplayTargetType: methodSymbol.ContainingType.ToDisplayString(SymbolDisplayFormat.CSharpErrorMessageFormat),
-            IsStatic: methodSymbol.IsStatic,
-            IsOverride: CanBeProxyOverride(methodSymbol),
-            IsReadOnly: !methodSymbol.IsStatic,
-            IsUnsafe: methodSymbol.ReturnType is IPointerTypeSymbol ||
-            methodSymbol.Parameters.Any(static x => x.Type is IPointerTypeSymbol),
-            ReturnsByRef: methodSymbol.RefKind is RefKind.Ref,
-            ReturnsByRefReadonly: methodSymbol.RefKind is RefKind.RefReadOnly,
-            GenericTypes: GetGenericTypes(methodSymbol),
-            Parameters:
-            [
-                .. methodSymbol.Parameters.Select(static x => new Parameter(
-                    GetSafeIdentifier(x.Name),
-                    x.Type.ToDisplayString(s_fullyQualifiedNullableFormat),
-                    x.RefKind switch
-                    {
-                        RefKind.Out => "out ",
-                        RefKind.Ref => "ref ",
-                        RefKind.In => "in ",
-                        RefKind.RefReadOnlyParameter => "ref readonly ",
-                        _ => string.Empty
-                    }))
-            ]);
-    }
-
-    private static bool CanBeProxyOverride(IMethodSymbol methodSymbol) =>
-        methodSymbol is { IsOverride: true, OverriddenMethod.ContainingType.SpecialType: SpecialType.System_Object };
-
-    private static string? GetSafeNamespace(INamespaceSymbol namespaceSymbol)
-    {
-        if (namespaceSymbol.IsGlobalNamespace)
-        {
-            return null;
-        }
-
-        var names = new Stack<string>();
-        for (var current = namespaceSymbol; !current.IsGlobalNamespace; current = current.ContainingNamespace)
-        {
-            names.Push(GetSafeIdentifier(current.Name));
-        }
-
-        return string.Join(".", names);
-    }
-
-    private static string GetSafeGeneratedIdentifier(string name, string suffix) =>
-        GetSafeIdentifier($"{name}{suffix}");
-
-    private static string GetSafeIdentifier(string name)
-    {
-        return SyntaxFacts.GetKeywordKind(name) is SyntaxKind.None
-            ? name
-            : $"@{name}";
-    }
-
-    private static IEnumerable<INamedTypeSymbol> EnumerateTargetAndBaseTypes(INamedTypeSymbol targetType)
-    {
-        for (var type = targetType; type is not null && type.SpecialType is not SpecialType.System_Object; type = type.BaseType)
-        {
-            yield return type;
-        }
-    }
-
     private static string GetMethodKey(IMethodSymbol methodSymbol)
     {
         var builder = new StringBuilder();
@@ -187,92 +93,11 @@ public sealed class ProxyGenerator : IIncrementalGenerator
         {
             builder.Append(parameter.RefKind);
             builder.Append(' ');
-            builder.Append(parameter.Type.ToDisplayString(s_fullyQualifiedNullableFormat));
+            builder.Append(parameter.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedNullableFormat));
             builder.Append(';');
         }
 
         builder.Append(')');
         return builder.ToString();
-    }
-
-    private static bool CanBeProxied(ITypeSymbol type)
-    {
-        return type switch
-        {
-            { SpecialType: SpecialType.System_Void } => true,
-            ITypeParameterSymbol { ConstraintTypes: var constraintTypes } => constraintTypes.All(CanBeProxied),
-            IPointerTypeSymbol { PointedAtType: var pointedAtType } => CanBeProxied(pointedAtType),
-            _ => type.DeclaredAccessibility is Accessibility.Public,
-        };
-    }
-
-    private static bool CanBeProxied(IPropertySymbol property) => CanBeProxied(property.Type);
-
-    private static bool CanBeProxied(IMethodSymbol method)
-    {
-        return method.MethodKind is MethodKind.Ordinary
-            && CanBeIdentifier(method.Name)
-            && CanBeProxied(method.ReturnType)
-            && method.TypeParameters.All(static x => x.ConstraintTypes.All(CanBeProxied))
-            && method.Parameters.All(static x => CanBeProxied(x.Type));
-    }
-
-    private static bool CanBeIdentifier(string name) =>
-        SyntaxFacts.IsValidIdentifier(name) || SyntaxFacts.GetKeywordKind(name) is not SyntaxKind.None;
-
-    private static ImmutableArray<GenericType> GetGenericTypes(IMethodSymbol method) =>
-        GetGenericTypes(method.TypeParameters);
-
-    private static ImmutableArray<GenericType> GetGenericTypes(ImmutableArray<ITypeParameterSymbol> typeParameters)
-    {
-        if (typeParameters.Length is 0)
-        {
-            return [];
-        }
-
-        var constraints = ImmutableArray.CreateBuilder<GenericType>(typeParameters.Length);
-
-        foreach (var typeParameter in typeParameters)
-        {
-            constraints.Add(
-                new GenericType(
-                    Name: GetSafeIdentifier(typeParameter.Name),
-                    Constraints: [.. EnumerateConstraints(typeParameter)]));
-        }
-
-        return constraints.MoveToImmutable();
-
-        static IEnumerable<string> EnumerateConstraints(ITypeParameterSymbol typeParameter)
-        {
-            if (typeParameter is { HasValueTypeConstraint: true, HasUnmanagedTypeConstraint: false })
-            {
-                yield return "struct";
-            }
-
-            if (typeParameter.HasReferenceTypeConstraint)
-            {
-                yield return typeParameter.NullableAnnotation is NullableAnnotation.Annotated ? "class?" : "class";
-            }
-
-            if (typeParameter.HasNotNullConstraint)
-            {
-                yield return "notnull";
-            }
-
-            if (typeParameter.HasUnmanagedTypeConstraint)
-            {
-                yield return "unmanaged";
-            }
-
-            foreach (var constraintType in typeParameter.ConstraintTypes)
-            {
-                yield return constraintType.ToDisplayString(s_fullyQualifiedNullableFormat);
-            }
-
-            if (typeParameter.HasConstructorConstraint)
-            {
-                yield return "new()";
-            }
-        }
     }
 }
