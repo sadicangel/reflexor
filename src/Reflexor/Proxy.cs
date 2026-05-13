@@ -3,7 +3,7 @@ using Microsoft.CodeAnalysis;
 
 namespace Reflexor;
 
-public readonly record struct Proxy(
+internal sealed record class Proxy(
     string Name,
     string? Namespace,
     Accessibility Accessibility,

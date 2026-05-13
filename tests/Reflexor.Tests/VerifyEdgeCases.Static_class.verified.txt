@@ -8,10 +8,7 @@ namespace Test
         {
             get
             {
-                return GetVersion(null!);
-
-                [global::System.Runtime.CompilerServices.UnsafeAccessor(global::System.Runtime.CompilerServices.UnsafeAccessorKind.StaticMethod, Name = "get_Version")]
-                extern static int GetVersion([global::System.Runtime.CompilerServices.UnsafeAccessorType("Test.StaticConfig")] object? target);
+                return Test.StaticConfig.Version;
             }
 
             set

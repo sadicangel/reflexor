@@ -36,10 +36,7 @@ namespace Test
             get
             {
                 ThrowInvalidOperationIfNotInitialized();
-                return GetUserName(_target);
-
-                [global::System.Runtime.CompilerServices.UnsafeAccessor(global::System.Runtime.CompilerServices.UnsafeAccessorKind.Method, Name = "get_UserName")]
-                extern static string GetUserName(global::Test.User target);
+                return _target.UserName;
             }
 
             set
@@ -57,10 +54,7 @@ namespace Test
             get
             {
                 ThrowInvalidOperationIfNotInitialized();
-                return GetEmail(_target);
-
-                [global::System.Runtime.CompilerServices.UnsafeAccessor(global::System.Runtime.CompilerServices.UnsafeAccessorKind.Method, Name = "get_Email")]
-                extern static string GetEmail(global::Test.User target);
+                return _target.Email;
             }
 
             set
@@ -76,10 +70,8 @@ namespace Test
         public readonly override string ToString()
         {
             ThrowInvalidOperationIfNotInitialized();
-            return CallToString(_target);
+            return _target.ToString();
 
-            [global::System.Runtime.CompilerServices.UnsafeAccessor(global::System.Runtime.CompilerServices.UnsafeAccessorKind.Method, Name = "ToString")]
-            extern static string CallToString(global::Test.User target);
         }
 
         public readonly bool PrintMembers(global::System.Text.StringBuilder builder)
@@ -94,37 +86,29 @@ namespace Test
         public readonly override int GetHashCode()
         {
             ThrowInvalidOperationIfNotInitialized();
-            return CallGetHashCode(_target);
+            return _target.GetHashCode();
 
-            [global::System.Runtime.CompilerServices.UnsafeAccessor(global::System.Runtime.CompilerServices.UnsafeAccessorKind.Method, Name = "GetHashCode")]
-            extern static int CallGetHashCode(global::Test.User target);
         }
 
         public readonly override bool Equals(object? obj)
         {
             ThrowInvalidOperationIfNotInitialized();
-            return CallEquals(_target, obj);
+            return _target.Equals(obj);
 
-            [global::System.Runtime.CompilerServices.UnsafeAccessor(global::System.Runtime.CompilerServices.UnsafeAccessorKind.Method, Name = "Equals")]
-            extern static bool CallEquals(global::Test.User target, object? obj);
         }
 
         public readonly bool Equals(global::Test.User? other)
         {
             ThrowInvalidOperationIfNotInitialized();
-            return CallEquals(_target, other);
+            return _target.Equals(other);
 
-            [global::System.Runtime.CompilerServices.UnsafeAccessor(global::System.Runtime.CompilerServices.UnsafeAccessorKind.Method, Name = "Equals")]
-            extern static bool CallEquals(global::Test.User target, global::Test.User? other);
         }
 
         public readonly void Deconstruct(out string UserName, out string Email)
         {
             ThrowInvalidOperationIfNotInitialized();
-            CallDeconstruct(_target, out UserName, out Email);
+            _target.Deconstruct(out UserName, out Email);
 
-            [global::System.Runtime.CompilerServices.UnsafeAccessor(global::System.Runtime.CompilerServices.UnsafeAccessorKind.Method, Name = "Deconstruct")]
-            extern static void CallDeconstruct(global::Test.User target, out string UserName, out string Email);
         }
 
         public static implicit operator UserProxy(global::Test.User target) => new UserProxy(target);

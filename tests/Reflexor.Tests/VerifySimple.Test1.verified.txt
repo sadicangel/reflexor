@@ -24,10 +24,7 @@ namespace Test
             get
             {
                 ThrowInvalidOperationIfNotInitialized();
-                return GetUserName(_target);
-
-                [global::System.Runtime.CompilerServices.UnsafeAccessor(global::System.Runtime.CompilerServices.UnsafeAccessorKind.Method, Name = "get_UserName")]
-                extern static string GetUserName(global::Test.User target);
+                return _target.UserName;
             }
 
             set
@@ -45,10 +42,7 @@ namespace Test
             get
             {
                 ThrowInvalidOperationIfNotInitialized();
-                return GetEmail(_target);
-
-                [global::System.Runtime.CompilerServices.UnsafeAccessor(global::System.Runtime.CompilerServices.UnsafeAccessorKind.Method, Name = "get_Email")]
-                extern static string GetEmail(global::Test.User target);
+                return _target.Email;
             }
 
             set

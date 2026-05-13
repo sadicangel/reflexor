@@ -24,10 +24,7 @@ namespace Test
             get
             {
                 ThrowInvalidOperationIfNotInitialized();
-                return GetValue(_target);
-
-                [global::System.Runtime.CompilerServices.UnsafeAccessor(global::System.Runtime.CompilerServices.UnsafeAccessorKind.Method, Name = "get_Value")]
-                extern static int GetValue(global::Test.OverrideDerived target);
+                return _target.Value;
             }
 
             set
