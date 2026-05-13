@@ -114,4 +114,58 @@ public class VerifyEdgeCases
             }
             """);
     }
+
+    [Fact]
+    public Task Inherited_members()
+    {
+        return TestHelper.VerifySourceCode("""
+            using Reflexor;
+
+            namespace Test;
+
+            public class BaseMembers
+            {
+                private int PrivateBase { get; set; }
+                protected int ProtectedBase { get; set; }
+                internal int InternalBase { get; set; }
+                public int PublicBase { get; set; }
+                public int Shadowed { get; private set; }
+                internal int Echo(int value) => value;
+                internal int Overload(int value) => value;
+                internal int Hidden(int value) => value;
+            }
+
+            [Reflexor]
+            public class DerivedMembers : BaseMembers
+            {
+                public string Own { get; init; } = "";
+                public new int Shadowed { get; private set; }
+                internal string Overload(string value) => value;
+                internal new int Hidden(int value) => value + 1;
+            }
+            """);
+    }
+
+    [Fact]
+    public Task Overridden_members()
+    {
+        return TestHelper.VerifySourceCode("""
+            using Reflexor;
+
+            namespace Test;
+
+            public class OverrideBase
+            {
+                public virtual int Value { get; init; }
+                internal virtual int Echo(int value) => value;
+            }
+
+            [Reflexor]
+            public class OverrideDerived : OverrideBase
+            {
+                public override int Value { get; init; }
+                internal override int Echo(int value) => value + 1;
+            }
+            """);
+    }
 }

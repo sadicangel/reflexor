@@ -127,5 +127,19 @@ namespace Test
         public static implicit operator AccessModifiersProxy(global::Test.AccessModifiers target) => new AccessModifiersProxy(target);
 
     }
+
+    public static partial class AccessModifiersProxyExtensions
+    {
+        public static global::Test.AccessModifiers Mutate(this global::Test.AccessModifiers target, global::System.Action<AccessModifiersProxy> mutation)
+        {
+            if (mutation is null)
+            {
+                throw new global::System.ArgumentNullException(nameof(mutation));
+            }
+
+            mutation(new AccessModifiersProxy(target));
+            return target;
+        }
+    }
 }
 #nullable restore

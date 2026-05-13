@@ -43,5 +43,19 @@ namespace Test
         public static implicit operator InnerProxy(global::Test.Outer.Inner target) => new InnerProxy(target);
 
     }
+
+    public static partial class InnerProxyExtensions
+    {
+        public static global::Test.Outer.Inner Mutate(this global::Test.Outer.Inner target, global::System.Action<InnerProxy> mutation)
+        {
+            if (mutation is null)
+            {
+                throw new global::System.ArgumentNullException(nameof(mutation));
+            }
+
+            mutation(new InnerProxy(target));
+            return target;
+        }
+    }
 }
 #nullable restore

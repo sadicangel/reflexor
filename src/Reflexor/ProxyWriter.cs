@@ -57,6 +57,12 @@ public static class ProxyWriter
             writer.Indent--;
             writer.WriteLine("}");
 
+            if (!proxy.IsStatic)
+            {
+                writer.WriteLine();
+                writer.WriteMutateExtensions(proxy);
+            }
+
             if (!string.IsNullOrEmpty(proxy.Namespace))
             {
                 writer.Indent--;
@@ -68,18 +74,7 @@ public static class ProxyWriter
 
         private void WriteProxyDeclaration(Proxy proxy)
         {
-            var accessibility = proxy.Accessibility switch
-            {
-                Accessibility.NotApplicable => string.Empty,
-                Accessibility.Private => "private",
-                Accessibility.ProtectedAndInternal => "private protected",
-                Accessibility.Protected => "protected",
-                Accessibility.Internal => "internal",
-                Accessibility.ProtectedOrInternal => "protected internal",
-                Accessibility.Public => "public",
-                _ => throw new InvalidOperationException($"Unknown accessibility: '{proxy.Accessibility}'")
-            };
-            writer.Write(accessibility);
+            writer.WriteAccessibility(proxy);
             writer.Write(" ");
 
             if (proxy.IsStatic)
@@ -166,7 +161,7 @@ public static class ProxyWriter
             writer.Write("extern static ");
             writer.Write(property.Type);
             writer.Write(" ");
-            writer.WriteAccessorSignature(proxy, $"Get{property.Name}", property.IsStatic, ImmutableArray<Parameter>.Empty);
+            writer.WriteAccessorSignature(proxy, $"Get{property.Name}", property.AccessorTargetType, property.AccessorDisplayTargetType, property.IsStatic, ImmutableArray<Parameter>.Empty);
             writer.WriteLine(";");
             writer.Indent--;
             writer.WriteLine("}");
@@ -183,7 +178,7 @@ public static class ProxyWriter
                 writer.WriteLine();
                 writer.WriteUnsafeAccessorAttribute(proxy, $"set_{property.Name}", property.IsStatic);
                 writer.Write("extern static void ");
-                writer.WriteAccessorSignature(proxy, $"Set{property.Name}", property.IsStatic, [new Parameter("value", property.Type, string.Empty)]);
+                writer.WriteAccessorSignature(proxy, $"Set{property.Name}", property.AccessorTargetType, property.AccessorDisplayTargetType, property.IsStatic, [new Parameter("value", property.Type, string.Empty)]);
                 writer.WriteLine(";");
                 writer.Indent--;
                 writer.WriteLine("}");
@@ -272,7 +267,7 @@ public static class ProxyWriter
 
             writer.Write(method.ReturnType);
             writer.Write(" ");
-            writer.WriteAccessorSignature(proxy, $"Call{method.Name}", method.IsStatic, method.Parameters);
+            writer.WriteAccessorSignature(proxy, $"Call{method.Name}", method.AccessorTargetType, method.AccessorDisplayTargetType, method.IsStatic, method.Parameters);
             writer.WriteLine(";");
             writer.Indent--;
             writer.WriteLine("}");
@@ -309,6 +304,8 @@ public static class ProxyWriter
         private void WriteAccessorSignature(
             Proxy proxy,
             string name,
+            string accessorTargetType,
+            string accessorDisplayTargetType,
             bool isStaticMember,
             ImmutableArray<Parameter> parameters)
         {
@@ -319,13 +316,13 @@ public static class ProxyWriter
             if (isStaticMember && proxy.IsStatic)
             {
                 writer.Write("[global::System.Runtime.CompilerServices.UnsafeAccessorType(\"");
-                writer.Write(proxy.DisplayTargetType);
+                writer.Write(accessorDisplayTargetType);
                 writer.Write("\")] object? target");
                 wroteParameter = true;
             }
             else if (!isStaticMember || !proxy.IsStatic)
             {
-                writer.Write(proxy.TargetType);
+                writer.Write(accessorTargetType);
                 writer.Write(" target");
                 wroteParameter = true;
             }
@@ -345,6 +342,47 @@ public static class ProxyWriter
             }
 
             writer.Write(")");
+        }
+
+        private void WriteMutateExtensions(Proxy proxy)
+        {
+            writer.WriteAccessibility(proxy);
+            writer.Write(" static partial class ");
+            writer.Write(proxy.Name);
+            writer.WriteLine("Extensions");
+            writer.WriteLine("{");
+            writer.Indent++;
+
+            writer.Write("public static ");
+            writer.Write(proxy.TargetType);
+            writer.Write(" Mutate");
+            writer.WriteGenericTypeArguments(proxy.GenericTypes);
+            writer.Write("(this ");
+            writer.Write(proxy.TargetType);
+            writer.Write(" target, global::System.Action<");
+            writer.Write(proxy.Name);
+            writer.WriteGenericTypeArguments(proxy.GenericTypes);
+            writer.WriteLine("> mutation)");
+            writer.WriteGenericConstraints(proxy.GenericTypes);
+            writer.WriteLine("{");
+            writer.Indent++;
+            writer.WriteLine("if (mutation is null)");
+            writer.WriteLine("{");
+            writer.Indent++;
+            writer.WriteLine("throw new global::System.ArgumentNullException(nameof(mutation));");
+            writer.Indent--;
+            writer.WriteLine("}");
+            writer.WriteLine();
+            writer.Write("mutation(new ");
+            writer.Write(proxy.Name);
+            writer.WriteGenericTypeArguments(proxy.GenericTypes);
+            writer.WriteLine("(target));");
+            writer.WriteLine("return target;");
+            writer.Indent--;
+            writer.WriteLine("}");
+
+            writer.Indent--;
+            writer.WriteLine("}");
         }
 
         private void WriteUnsafeAccessorAttribute(Proxy proxy, string methodName, bool isStaticMethod)
@@ -394,6 +432,23 @@ public static class ProxyWriter
             }
 
             writer.Indent--;
+        }
+
+        private void WriteAccessibility(Proxy proxy)
+        {
+            var accessibility = proxy.Accessibility switch
+            {
+                Accessibility.NotApplicable => string.Empty,
+                Accessibility.Private => "private",
+                Accessibility.ProtectedAndInternal => "private protected",
+                Accessibility.Protected => "protected",
+                Accessibility.Internal => "internal",
+                Accessibility.ProtectedOrInternal => "protected internal",
+                Accessibility.Public => "public",
+                _ => throw new InvalidOperationException($"Unknown accessibility: '{proxy.Accessibility}'")
+            };
+
+            writer.Write(accessibility);
         }
 
         private void WriteCommaSeparatedList<T>(

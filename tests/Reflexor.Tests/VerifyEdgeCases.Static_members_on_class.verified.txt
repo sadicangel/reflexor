@@ -49,5 +49,19 @@ namespace Test
         public static implicit operator StaticMemberContainerProxy(global::Test.StaticMemberContainer target) => new StaticMemberContainerProxy(target);
 
     }
+
+    public static partial class StaticMemberContainerProxyExtensions
+    {
+        public static global::Test.StaticMemberContainer Mutate(this global::Test.StaticMemberContainer target, global::System.Action<StaticMemberContainerProxy> mutation)
+        {
+            if (mutation is null)
+            {
+                throw new global::System.ArgumentNullException(nameof(mutation));
+            }
+
+            mutation(new StaticMemberContainerProxy(target));
+            return target;
+        }
+    }
 }
 #nullable restore
