@@ -2,6 +2,7 @@ namespace Reflexor;
 
 public readonly record struct Property(
     string Name,
+    string MetadataName,
     string Type,
     string AccessorTargetType,
     string AccessorDisplayTargetType,

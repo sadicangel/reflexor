@@ -51,10 +51,8 @@ public sealed class ProxyGenerator : IIncrementalGenerator
                     }
 
                     return new Proxy(
-                        Name: $"{targetType.Name}Proxy",
-                        Namespace: targetType.ContainingNamespace.IsGlobalNamespace
-                            ? null
-                            : targetType.ContainingNamespace.ToDisplayString(SymbolDisplayFormat.CSharpErrorMessageFormat),
+                        Name: GetSafeGeneratedIdentifier(targetType.Name, "Proxy"),
+                        Namespace: GetSafeNamespace(targetType.ContainingNamespace),
                         Accessibility: targetType.DeclaredAccessibility,
                         TargetType: targetType.ToDisplayString(s_fullyQualifiedNullableFormat),
                         DisplayTargetType: targetType.ToDisplayString(SymbolDisplayFormat.CSharpErrorMessageFormat),
@@ -98,7 +96,8 @@ public sealed class ProxyGenerator : IIncrementalGenerator
             (properties.TryGetValue(propertySymbol.Name, out var existing) && existing.IsReadOnly);
 
         return new Property(
-            Name: propertySymbol.Name,
+            Name: GetSafeIdentifier(propertySymbol.Name),
+            MetadataName: propertySymbol.Name,
             Type: propertySymbol.Type.ToDisplayString(s_fullyQualifiedNullableFormat),
             AccessorTargetType: propertySymbol.ContainingType.ToDisplayString(s_fullyQualifiedNullableFormat),
             AccessorDisplayTargetType: propertySymbol.ContainingType.ToDisplayString(SymbolDisplayFormat.CSharpErrorMessageFormat),
@@ -110,7 +109,8 @@ public sealed class ProxyGenerator : IIncrementalGenerator
     private static Method CreateMethod(IMethodSymbol methodSymbol)
     {
         return new Method(
-            Name: methodSymbol.Name,
+            Name: GetSafeIdentifier(methodSymbol.Name),
+            MetadataName: methodSymbol.Name,
             ReturnType: methodSymbol.ReturnType.ToDisplayString(s_fullyQualifiedNullableFormat),
             AccessorTargetType: methodSymbol.ContainingType.ToDisplayString(s_fullyQualifiedNullableFormat),
             AccessorDisplayTargetType: methodSymbol.ContainingType.ToDisplayString(SymbolDisplayFormat.CSharpErrorMessageFormat),
@@ -125,7 +125,7 @@ public sealed class ProxyGenerator : IIncrementalGenerator
             Parameters:
             [
                 .. methodSymbol.Parameters.Select(static x => new Parameter(
-                    x.Name,
+                    GetSafeIdentifier(x.Name),
                     x.Type.ToDisplayString(s_fullyQualifiedNullableFormat),
                     x.RefKind switch
                     {
@@ -140,6 +140,32 @@ public sealed class ProxyGenerator : IIncrementalGenerator
 
     private static bool CanBeProxyOverride(IMethodSymbol methodSymbol) =>
         methodSymbol is { IsOverride: true, OverriddenMethod.ContainingType.SpecialType: SpecialType.System_Object };
+
+    private static string? GetSafeNamespace(INamespaceSymbol namespaceSymbol)
+    {
+        if (namespaceSymbol.IsGlobalNamespace)
+        {
+            return null;
+        }
+
+        var names = new Stack<string>();
+        for (var current = namespaceSymbol; !current.IsGlobalNamespace; current = current.ContainingNamespace)
+        {
+            names.Push(GetSafeIdentifier(current.Name));
+        }
+
+        return string.Join(".", names);
+    }
+
+    private static string GetSafeGeneratedIdentifier(string name, string suffix) =>
+        GetSafeIdentifier($"{name}{suffix}");
+
+    private static string GetSafeIdentifier(string name)
+    {
+        return SyntaxFacts.GetKeywordKind(name) is SyntaxKind.None
+            ? name
+            : $"@{name}";
+    }
 
     private static IEnumerable<INamedTypeSymbol> EnumerateTargetAndBaseTypes(INamedTypeSymbol targetType)
     {
@@ -185,11 +211,14 @@ public sealed class ProxyGenerator : IIncrementalGenerator
     private static bool CanBeProxied(IMethodSymbol method)
     {
         return method.MethodKind is MethodKind.Ordinary
-            && SyntaxFacts.IsValidIdentifier(method.Name)
+            && CanBeIdentifier(method.Name)
             && CanBeProxied(method.ReturnType)
             && method.TypeParameters.All(static x => x.ConstraintTypes.All(CanBeProxied))
             && method.Parameters.All(static x => CanBeProxied(x.Type));
     }
+
+    private static bool CanBeIdentifier(string name) =>
+        SyntaxFacts.IsValidIdentifier(name) || SyntaxFacts.GetKeywordKind(name) is not SyntaxKind.None;
 
     private static ImmutableArray<GenericType> GetGenericTypes(IMethodSymbol method) =>
         GetGenericTypes(method.TypeParameters);
@@ -207,7 +236,7 @@ public sealed class ProxyGenerator : IIncrementalGenerator
         {
             constraints.Add(
                 new GenericType(
-                    Name: typeParameter.Name,
+                    Name: GetSafeIdentifier(typeParameter.Name),
                     Constraints: [.. EnumerateConstraints(typeParameter)]));
         }
 
