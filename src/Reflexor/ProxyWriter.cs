@@ -164,15 +164,26 @@ internal static class ProxyWriter
             writer.Indent++;
             writer.WritePropertyGuard(proxy, identifiers, property);
             writer.Write("return ");
-            writer.WriteAccessorCall($"Get{property.MetadataName}", identifiers, property.IsStatic, [.. ImmutableArray<Parameter>.Empty]);
-            writer.WriteLine(";");
-            writer.WriteLine();
-            writer.WriteUnsafeAccessorAttribute(proxy, $"get_{property.MetadataName}", property.IsStatic);
-            writer.Write("extern static ");
-            writer.Write(property.Type);
-            writer.Write(" ");
-            writer.WriteAccessorSignature(proxy, $"Get{property.MetadataName}", property.AccessorTargetType, property.AccessorDisplayTargetType, property.IsStatic, ImmutableArray<Parameter>.Empty);
-            writer.WriteLine(";");
+            if (property.IsGetPublic)
+            {
+                writer.Write(property.IsStatic ? proxy.DisplayTargetType : identifiers.TargetFieldName);
+                writer.Write(".");
+                writer.Write(property.Name);
+                writer.WriteLine(";");
+            }
+            else
+            {
+                writer.WriteMethodCall($"Get{property.MetadataName}", identifiers, property.IsStatic, [], true);
+                writer.WriteLine(";");
+                writer.WriteLine();
+                writer.WriteUnsafeAccessorAttribute($"get_{property.MetadataName}", property.IsStatic);
+                writer.Write("extern static ");
+                writer.Write(property.Type);
+                writer.Write(" ");
+                writer.WriteAccessorSignature(proxy, $"Get{property.MetadataName}", property.AccessorTargetType, property.AccessorDisplayTargetType, property.IsStatic, ImmutableArray<Parameter>.Empty);
+                writer.WriteLine(";");
+            }
+
             writer.Indent--;
             writer.WriteLine("}");
 
@@ -183,13 +194,24 @@ internal static class ProxyWriter
                 writer.WriteLine("{");
                 writer.Indent++;
                 writer.WritePropertyGuard(proxy, identifiers, property);
-                writer.WriteAccessorCall($"Set{property.MetadataName}", identifiers, property.IsStatic, [new Parameter("value", property.Type, string.Empty)]);
-                writer.WriteLine(";");
-                writer.WriteLine();
-                writer.WriteUnsafeAccessorAttribute(proxy, $"set_{property.MetadataName}", property.IsStatic);
-                writer.Write("extern static void ");
-                writer.WriteAccessorSignature(proxy, $"Set{property.MetadataName}", property.AccessorTargetType, property.AccessorDisplayTargetType, property.IsStatic, [new Parameter("value", property.Type, string.Empty)]);
-                writer.WriteLine(";");
+                if (property.IsSetPublic)
+                {
+                    writer.Write(property.IsStatic ? proxy.DisplayTargetType : identifiers.TargetFieldName);
+                    writer.Write(".");
+                    writer.Write(property.Name);
+                    writer.WriteLine(" = value;");
+                }
+                else
+                {
+                    writer.WriteMethodCall($"Set{property.MetadataName}", identifiers, property.IsStatic, [new Parameter("value", property.Type, string.Empty)], true);
+                    writer.WriteLine(";");
+                    writer.WriteLine();
+                    writer.WriteUnsafeAccessorAttribute($"set_{property.MetadataName}", property.IsStatic);
+                    writer.Write("extern static void ");
+                    writer.WriteAccessorSignature(proxy, $"Set{property.MetadataName}", property.AccessorTargetType, property.AccessorDisplayTargetType, property.IsStatic, [new Parameter("value", property.Type, string.Empty)]);
+                    writer.WriteLine(";");
+                }
+
                 writer.Indent--;
                 writer.WriteLine("}");
             }
@@ -200,10 +222,6 @@ internal static class ProxyWriter
 
         private void WriteMethod(Proxy proxy, ProxyIdentifiers identifiers, Method method)
         {
-            var accessorName = IndentedStringBuilder.GetGeneratedIdentifier(
-                $"Call{method.MetadataName}",
-                method.Parameters.Select(static parameter => parameter.Name));
-
             writer.Write("public ");
             if (method.IsStatic)
             {
@@ -265,25 +283,38 @@ internal static class ProxyWriter
                 writer.Write("return ");
             }
 
-            writer.WriteAccessorCall(accessorName, identifiers, method.IsStatic, method.Parameters);
-            writer.WriteLine(";");
-            writer.WriteLine();
-            writer.WriteUnsafeAccessorAttribute(proxy, method.MetadataName, method.IsStatic);
-            writer.Write("extern static ");
-
-            if (method.ReturnsByRefReadonly)
+            if (method.IsPublic)
             {
-                writer.Write("ref readonly ");
+                writer.Write(method.IsStatic ? proxy.DisplayTargetType : identifiers.TargetFieldName);
+                writer.Write(".");
+                writer.WriteMethodCall(method.Name, identifiers, method.IsStatic, method.Parameters, false);
+                writer.WriteLine(";");
+                writer.WriteLine();
             }
-            else if (method.ReturnsByRef)
+            else
             {
-                writer.Write("ref ");
+                var accessorName = IndentedStringBuilder.GetGeneratedIdentifier($"Call{method.MetadataName}", method.Parameters.Select(static parameter => parameter.Name));
+                writer.WriteMethodCall(accessorName, identifiers, method.IsStatic, method.Parameters, true);
+                writer.WriteLine(";");
+                writer.WriteLine();
+                writer.WriteUnsafeAccessorAttribute(method.MetadataName, method.IsStatic);
+                writer.Write("extern static ");
+
+                if (method.ReturnsByRefReadonly)
+                {
+                    writer.Write("ref readonly ");
+                }
+                else if (method.ReturnsByRef)
+                {
+                    writer.Write("ref ");
+                }
+
+                writer.Write(method.ReturnType);
+                writer.Write(" ");
+                writer.WriteAccessorSignature(proxy, accessorName, method.AccessorTargetType, method.AccessorDisplayTargetType, method.IsStatic, method.Parameters);
+                writer.WriteLine(";");
             }
 
-            writer.Write(method.ReturnType);
-            writer.Write(" ");
-            writer.WriteAccessorSignature(proxy, accessorName, method.AccessorTargetType, method.AccessorDisplayTargetType, method.IsStatic, method.Parameters);
-            writer.WriteLine(";");
             writer.Indent--;
             writer.WriteLine("}");
         }
@@ -297,32 +328,38 @@ internal static class ProxyWriter
             }
         }
 
-        private void WriteAccessorCall(
-            string name,
+        private void WriteMethodCall(
+            string methodName,
             ProxyIdentifiers identifiers,
             bool isStaticMember,
-            ImmutableArray<Parameter> parameters)
+            ImmutableArray<Parameter> parameters,
+            bool includeThis)
         {
-            writer.Write(name);
+            writer.Write(methodName);
             writer.Write("(");
 
-            if (!isStaticMember)
+            if (includeThis)
             {
-                if (parameters.Any(parameter => parameter.Name == identifiers.TargetFieldName))
+                if (isStaticMember)
                 {
-                    writer.Write("this.");
+                    writer.Write("null!");
                 }
+                else
+                {
+                    if (parameters.Any(parameter => parameter.Name == identifiers.TargetFieldName))
+                    {
+                        writer.Write("this.");
+                    }
 
-                writer.Write(identifiers.TargetFieldName);
-            }
-            else
-            {
-                writer.Write("null!");
+                    writer.Write(identifiers.TargetFieldName);
+                }
             }
 
+            var first = !includeThis;
             foreach (var parameter in parameters)
             {
-                writer.Write(", ");
+                if (first) first = false;
+                else writer.Write(", ");
                 writer.Write(parameter.Ref);
                 writer.Write(parameter.Name);
             }
@@ -417,9 +454,9 @@ internal static class ProxyWriter
             writer.WriteLine("}");
         }
 
-        private void WriteUnsafeAccessorAttribute(Proxy proxy, string methodName, bool isStaticMethod)
+        private void WriteUnsafeAccessorAttribute(string methodName, bool isStatic)
         {
-            var unsafeAccessorKind = isStaticMethod || proxy.IsStatic
+            var unsafeAccessorKind = isStatic
                 ? "global::System.Runtime.CompilerServices.UnsafeAccessorKind.StaticMethod"
                 : "global::System.Runtime.CompilerServices.UnsafeAccessorKind.Method";
 

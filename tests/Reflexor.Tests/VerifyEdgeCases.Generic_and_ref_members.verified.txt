@@ -25,10 +25,7 @@ namespace Test
             get
             {
                 ThrowInvalidOperationIfNotInitialized();
-                return GetValue(_target);
-
-                [global::System.Runtime.CompilerServices.UnsafeAccessor(global::System.Runtime.CompilerServices.UnsafeAccessorKind.Method, Name = "get_Value")]
-                extern static T? GetValue(global::Test.GenericRefMembers<T> target);
+                return _target.Value;
             }
 
             set

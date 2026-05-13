@@ -3,12 +3,13 @@ using Microsoft.CodeAnalysis;
 
 namespace Reflexor;
 
-internal readonly record struct Method(
+internal sealed record class Method(
     string Name,
     string MetadataName,
     string ReturnType,
     string AccessorTargetType,
     string AccessorDisplayTargetType,
+    bool IsPublic,
     bool IsStatic,
     bool IsOverride,
     bool IsReadOnly,
@@ -26,6 +27,7 @@ internal readonly record struct Method(
             ReturnType: methodSymbol.ReturnType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedNullableFormat),
             AccessorTargetType: methodSymbol.ContainingType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedNullableFormat),
             AccessorDisplayTargetType: methodSymbol.ContainingType.ToDisplayString(SymbolDisplayFormat.CSharpErrorMessageFormat),
+            IsPublic: methodSymbol.DeclaredAccessibility is Accessibility.Public,
             IsStatic: methodSymbol.IsStatic,
             IsOverride: CanBeProxyOverride(methodSymbol),
             IsReadOnly: !methodSymbol.IsStatic,

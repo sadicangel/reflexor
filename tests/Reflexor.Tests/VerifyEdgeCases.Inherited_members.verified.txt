@@ -24,10 +24,7 @@ namespace Test
             get
             {
                 ThrowInvalidOperationIfNotInitialized();
-                return GetOwn(_target);
-
-                [global::System.Runtime.CompilerServices.UnsafeAccessor(global::System.Runtime.CompilerServices.UnsafeAccessorKind.Method, Name = "get_Own")]
-                extern static string GetOwn(global::Test.DerivedMembers target);
+                return _target.Own;
             }
 
             set
@@ -45,10 +42,7 @@ namespace Test
             get
             {
                 ThrowInvalidOperationIfNotInitialized();
-                return GetShadowed(_target);
-
-                [global::System.Runtime.CompilerServices.UnsafeAccessor(global::System.Runtime.CompilerServices.UnsafeAccessorKind.Method, Name = "get_Shadowed")]
-                extern static int GetShadowed(global::Test.DerivedMembers target);
+                return _target.Shadowed;
             }
 
             set
@@ -129,19 +123,13 @@ namespace Test
             get
             {
                 ThrowInvalidOperationIfNotInitialized();
-                return GetPublicBase(_target);
-
-                [global::System.Runtime.CompilerServices.UnsafeAccessor(global::System.Runtime.CompilerServices.UnsafeAccessorKind.Method, Name = "get_PublicBase")]
-                extern static int GetPublicBase(global::Test.BaseMembers target);
+                return _target.PublicBase;
             }
 
             set
             {
                 ThrowInvalidOperationIfNotInitialized();
-                SetPublicBase(_target, value);
-
-                [global::System.Runtime.CompilerServices.UnsafeAccessor(global::System.Runtime.CompilerServices.UnsafeAccessorKind.Method, Name = "set_PublicBase")]
-                extern static void SetPublicBase(global::Test.BaseMembers target, int value);
+                _target.PublicBase = value;
             }
         }
 

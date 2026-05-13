@@ -23,10 +23,7 @@ namespace Test
         {
             get
             {
-                return GetVersion(null!);
-
-                [global::System.Runtime.CompilerServices.UnsafeAccessor(global::System.Runtime.CompilerServices.UnsafeAccessorKind.StaticMethod, Name = "get_Version")]
-                extern static int GetVersion(global::Test.StaticMemberContainer target);
+                return Test.StaticMemberContainer.Version;
             }
 
             set
