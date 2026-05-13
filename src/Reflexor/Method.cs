@@ -4,6 +4,7 @@ namespace Reflexor;
 
 public readonly record struct Method(
     string Name,
+    string MetadataName,
     string ReturnType,
     string AccessorTargetType,
     string AccessorDisplayTargetType,

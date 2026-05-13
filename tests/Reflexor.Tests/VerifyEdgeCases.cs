@@ -77,6 +77,30 @@ public class VerifyEdgeCases
     }
 
     [Fact]
+    public Task Safe_parameter_names()
+    {
+        return TestHelper.VerifySourceCode("""
+            using Reflexor;
+
+            namespace @namespace;
+
+            public class Event;
+
+            [Reflexor]
+            public class @class<@event>
+                where @event : class
+            {
+                public int @params { get; private set; }
+                public int _target { get; private set; }
+                internal @event @return<@while>(@event @event, int target, int _target, int Callreturn)
+                    where @while : class
+                    => @event;
+                internal void @while(Event @event) { }
+            }
+            """);
+    }
+
+    [Fact]
     public Task Access_modifiers_and_unsafe_members()
     {
         return TestHelper.VerifySourceCode("""
